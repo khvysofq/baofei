@@ -79,7 +79,7 @@ export async function buildHelpCard(caseId: string, kind: HelpKind): Promise<Hel
   ];
   const materials: string[] = state.documents
     .filter((d) => d.sampleId)
-    .map((d) => (d.type === "DRIVING_LICENSE" ? "行驶证（演示）" : d.type === "REGISTRATION_CERT" ? "登记证（演示）" : "授权核对（演示）"));
+    .map((d) => (d.type === "DRIVING_LICENSE" ? "行驶证" : d.type === "REGISTRATION_CERT" ? "登记证" : "授权核对"));
   if (state.plan.documentsStatus === "missing_registration") {
     materials.push("登记证缺失（待核对）");
   }
@@ -95,10 +95,10 @@ export async function buildHelpCard(caseId: string, kind: HelpKind): Promise<Hel
       ? `发票地区：${regionLabel(state.subsidy.invoiceRegion)}；受理市州：${state.subsidy.acceptingCity ?? "待确认"}`
       : "未参与补贴待办",
     questions: QUESTION_MAP[kind],
-    materials: materials.length ? materials : ["尚未选择演示材料"],
+    materials: materials.length ? materials : ["尚未选择材料"],
     channel: CHANNEL_MAP[kind],
     blockingTask: blocking === "none" ? "当前没有阻塞任务" : `阻塞任务：${blocking}`,
-    note: "本地交接卡，不发送任何信息；生成记录仅为演示，不代表人工客服已响应或官方已受理。",
+    note: "本地交接卡，不发送任何信息；生成记录不代表人工客服已响应或官方已受理。",
     demo: true,
   };
 }
@@ -132,9 +132,9 @@ export async function recordHelpCard(caseId: string, kind: HelpKind): Promise<He
   return card;
 }
 
-/** 解决特殊情形阻断任务（演示核对说明必须写明，不写成官方批准）。 */
+/** 解决特殊情形阻断任务（核对说明必须写明，不写成官方批准）。 */
 export async function resolveSpecialCase(caseId: string, note: string): Promise<void> {
-  if (!note.trim()) throw new Error("请填写演示核对说明");
+  if (!note.trim()) throw new Error("请填写核对说明");
   const { resolveTask } = await import("@/lib/services/plan");
   await resolveTask(caseId, "unsupported_case", note);
 }

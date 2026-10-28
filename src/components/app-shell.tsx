@@ -19,18 +19,16 @@ function regionText(snapshot: ReturnType<typeof useCase>["snapshot"]): string {
   return value.province === value.city ? value.city : `${value.province}·${value.city}`;
 }
 
-function DemoStrip() {
+function DesktopCaseBar() {
   const { snapshot } = useCase();
   return (
-    <div className="sticky top-0 z-40 border-b border-line-strong bg-void/95 scanlines">
-      <div className="mx-auto flex h-8 max-w-[1320px] items-center justify-between gap-3 px-3">
-        <p className="mono truncate text-[10px] tracking-[0.14em] text-warn">
-          DEMO · 演示模式 · 演示数据不产生真实法律效力
-        </p>
-        <p className="mono shrink-0 text-[10px] tracking-[0.08em] text-dim">
-          {snapshot?.case.caseNo ?? "NO CASE"}
-        </p>
-      </div>
+    <div className="sticky top-0 z-30 hidden h-10 items-center justify-between border-b border-line bg-void/95 px-8 lg:flex">
+      <p className="mono text-[10px] tracking-[0.14em] text-dim">
+        四川地区 · 线上办理
+      </p>
+      <p className="mono text-[10px] tracking-[0.08em] text-dim">
+        {snapshot?.case.caseNo ?? "未登记案件"}
+      </p>
     </div>
   );
 }
@@ -39,11 +37,14 @@ function SideNav() {
   const pathname = usePathname();
   const { snapshot, loading } = useCase();
   return (
-    <aside className="sticky top-8 hidden h-[calc(100dvh-2rem)] w-[220px] shrink-0 border-r border-line px-4 py-6 lg:block">
+    <aside className="sticky top-0 hidden h-dvh w-[220px] shrink-0 border-r border-line px-4 py-6 lg:block">
       <Link href="/start" className="block">
         <p className="label text-rust">SICHUAN · SCRAP ASSIST</p>
         <p className="mt-1 text-2xl font-black tracking-tight">报废助手</p>
-        <p className="mono mt-1 text-[11px] text-dim">DEMO-SC-V1.1</p>
+        <p className="mono mt-1 text-[11px] text-dim">V1.1</p>
+        <p className="mono mt-2 text-[10px] tracking-[0.08em] text-dim">
+          {snapshot?.case.caseNo ?? "未登记案件"}
+        </p>
       </Link>
 
       <nav aria-label="主要导航" className="mt-8 space-y-1">
@@ -73,7 +74,7 @@ function SideNav() {
       <div className="mt-8 border-t border-line pt-4">
         <p className="label">当前地区</p>
         <p className="mt-1 text-sm font-semibold">
-          {loading && !snapshot ? "加载中…" : `${regionText(snapshot)}（演示）`}
+          {loading && !snapshot ? "加载中…" : regionText(snapshot)}
         </p>
         <p className="mono mt-2 text-[11px] text-dim">
           {snapshot?.policy.statusLabel ?? "未选择案件"}
@@ -83,9 +84,9 @@ function SideNav() {
       <div className="mt-6 space-y-2 text-xs text-dim">
         <p className="flex items-center gap-2">
           <span className="lamp text-acid breathe" aria-hidden />
-          演示环境在线
+          服务运行正常
         </p>
-        <p>不接真实政务、企业或支付接口。</p>
+        <p>四川地区 · 线上办理</p>
       </div>
     </aside>
   );
@@ -94,13 +95,15 @@ function SideNav() {
 function MobileHeader() {
   const { snapshot } = useCase();
   return (
-    <header className="sticky top-8 z-30 border-b border-line bg-void/95 px-3 py-2 lg:hidden">
+    <header className="sticky top-0 z-30 border-b border-line bg-void/95 px-3 py-2 lg:hidden">
       <div className="flex items-center justify-between gap-3">
         <Link href="/start" className="flex items-baseline gap-2">
           <span className="text-lg font-black tracking-tight">报废助手</span>
-          <span className="mono text-[10px] text-dim">四川 · DEMO</span>
+          <span className="mono text-[10px] text-dim">四川</span>
         </Link>
-        <span className="tag text-dim">{regionText(snapshot)}</span>
+        <span className="mono truncate text-[10px] tracking-[0.08em] text-dim">
+          {snapshot?.case.caseNo ?? "未登记案件"}
+        </span>
       </div>
     </header>
   );
@@ -142,10 +145,10 @@ function ShellBody({ children }: { children: React.ReactNode }) {
       >
         跳到主要内容
       </a>
-      <DemoStrip />
       <div className="mx-auto flex w-full max-w-[1320px]">
         <SideNav />
         <div className="min-w-0 flex-1">
+          <DesktopCaseBar />
           <MobileHeader />
           <main id="main" className="px-3 pb-28 pt-4 sm:px-5 lg:px-8 lg:pb-16 lg:pt-8">
             {children}
@@ -159,18 +162,6 @@ function ShellBody({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LandingStrip() {
-  return (
-    <div className="sticky top-0 z-40 border-b border-line-strong bg-void/95 scanlines">
-      <div className="mx-auto flex h-8 max-w-[1440px] items-center px-4 sm:px-6">
-        <p className="mono truncate text-[10px] tracking-[0.14em] text-warn">
-          DEMO · 演示模式 · 演示数据不产生真实法律效力
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function LandingShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh">
@@ -180,7 +171,6 @@ function LandingShell({ children }: { children: React.ReactNode }) {
       >
         跳到主要内容
       </a>
-      <LandingStrip />
       {children}
       <div className="noise-overlay" aria-hidden />
     </div>
@@ -189,7 +179,7 @@ function LandingShell({ children }: { children: React.ReactNode }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // 首页是静态营销页：不接入案件上下文、演示控制抽屉与侧边导航。
+  // 首页是静态营销页：不接入案件上下文、调试抽屉与侧边导航。
   if (pathname === "/") return <LandingShell>{children}</LandingShell>;
   return (
     <CaseProvider>

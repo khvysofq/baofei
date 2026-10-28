@@ -131,7 +131,7 @@ export function VehicleRig() {
             fontSize="9"
             letterSpacing="1.5"
           >
-            <text x="32" y="396">DEMO UNIT · NOT TO SCALE</text>
+            <text x="32" y="396">SICHUAN UNIT · NOT TO SCALE</text>
             <text x="32" y="410">SICHUAN / CD · 30.57N 104.06E</text>
           </g>
           <text
@@ -143,7 +143,7 @@ export function VehicleRig() {
             fontSize="9"
             letterSpacing="1.5"
           >
-            DEMO
+            SC
           </text>
           <g className="stroke-line-strong" strokeWidth="1" fill="none">
             <path d="M368 404v16h-28" />

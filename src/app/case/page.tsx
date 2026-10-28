@@ -25,14 +25,14 @@ const EVIDENCE_LABELS: Record<string, string> = {
 const EVIDENCE_STATUS: Record<string, string> = {
   provided: "已提供 待核验",
   pending_check: "已提供 待核验",
-  demo_verified: "演示核验完成",
+  demo_verified: "已核验",
   rejected: "核对未通过",
 };
 
 const SOURCE_LABELS: Record<string, string> = {
   user: "用户操作",
   rule: "规则生成",
-  demo_controller: "演示控制",
+  demo_controller: "内部调试",
   system: "系统",
 };
 
@@ -124,10 +124,10 @@ export default function CasePage() {
             vehicleId: snapshot.vehicle.id,
             type: "DEREGISTRATION_CERTIFICATE",
             status: "provided",
-            description: "用户提供的演示注销证明样例，等待核验。",
+            description: "用户提供的注销证明样例，等待核验。",
           },
         }),
-      "已提供演示注销证明，状态为“已提供 待核验”，不会自动完成注销。",
+      "已提供注销证明，状态为“已提供 待核验”，不会自动完成注销。",
     );
   }
 
@@ -158,7 +158,7 @@ export default function CasePage() {
   async function resolveSpecial() {
     if (!caseId) return;
     if (!helpNote.trim()) {
-      setMessage("请填写演示核对说明。");
+      setMessage("请填写核对说明。");
       return;
     }
     await act(
@@ -172,7 +172,7 @@ export default function CasePage() {
             note: helpNote.trim(),
           },
         }),
-      "特殊情形核对任务已解除（演示说明，不代表官方批准）。",
+      "特殊情形核对任务已解除（核对说明，不代表官方批准）。",
     );
   }
 
@@ -208,8 +208,8 @@ export default function CasePage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Tag>{vehicle?.city ? `${vehicle.province ?? ""}·${vehicle.city}（演示）` : "地区待确认"}</Tag>
-          <Tag tone="acid">演示身份保留</Tag>
+          <Tag>{vehicle?.city ? `${vehicle.province ?? ""}·${vehicle.city}` : "地区待确认"}</Tag>
+          <Tag tone="acid">办理记录留档</Tag>
         </div>
       </div>
 
@@ -259,15 +259,15 @@ export default function CasePage() {
                       disabled={busy !== null}
                       onClick={() => void provideDeregSample()}
                     >
-                      提供演示注销证明（待核验）
+                      提供注销证明（待核验）
                     </button>
                   ) : track.status === "pending_check" ? (
                     <p className="text-sm text-warn">
-                      注销证明已提供，等待演示核验；仅提供文件不会完成注销。
+                      注销证明已提供，等待核验；仅提供文件不会完成注销。
                     </p>
                   ) : (
                     <p className="text-sm text-acid">
-                      注销已完成演示核验；仍需单独确认回收款到账。
+                      注销已完成核验；仍需单独确认回收款到账。
                     </p>
                   )}
                 </div>
@@ -333,7 +333,7 @@ export default function CasePage() {
       </section>
 
       <section className="mt-6">
-        <SectionTitle aside={<Tag tone="warn">演示凭证</Tag>}>凭证详情</SectionTitle>
+        <SectionTitle aside={<Tag tone="warn">凭证</Tag>}>凭证详情</SectionTitle>
         {snapshot.evidence.length === 0 ? (
           <Panel>
             <p className="text-sm text-dim">
@@ -359,7 +359,7 @@ export default function CasePage() {
                     <dd className="mono">{snapshot.case.caseNo}</dd>
                   </div>
                   <div>
-                    <dt className="label">演示车辆编号</dt>
+                    <dt className="label">车辆编号</dt>
                     <dd className="mono">{snapshot.vehicle.demoVehicleNo}</dd>
                   </div>
                   <div>
@@ -462,17 +462,17 @@ export default function CasePage() {
           {unsupportedTask && (
             <div className="mt-4 border-t border-line pt-3">
               <Notice tone="warn" title="特殊情形阻断任务">
-                常规办理判定已暂停。解决时必须写明演示核对说明，不能写成官方已批准。
+                常规办理判定已暂停。解决时必须写明核对说明，不能写成官方已批准。
               </Notice>
               <label htmlFor="help-resolution" className="label mt-2 block">
-                演示核对说明
+                核对说明
               </label>
               <textarea
                 id="help-resolution"
                 className="input mt-1 min-h-[72px]"
                 value={helpNote}
                 onChange={(e) => setHelpNote(e.target.value)}
-                placeholder="例如：已演示核对抵押状态与权属问题，仍需线下渠道确认。"
+                placeholder="例如：已核对抵押状态与权属问题，仍需线下渠道确认。"
               />
               <button
                 type="button"

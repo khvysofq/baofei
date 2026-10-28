@@ -35,7 +35,7 @@ describe("金额（整数分）", () => {
     expect(formatYuan(null)).toBe("待确认");
   });
 
-  it("演示报价净额：A 1000 元，B 1050 元", () => {
+  it("报价净额：A 1000 元，B 1050 元", () => {
     expect(
       calcNetFen({ grossFen: 120000, towFen: 20000, serviceFen: 0 }),
     ).toBe(100000);

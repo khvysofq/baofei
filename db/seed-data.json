@@ -67,16 +67,16 @@
   "samples": [
     {
       "id": "DOC_CLEAR",
-      "label": "演示资料 1",
+      "label": "样例资料 1",
       "docType": "REGISTRATION_CERT",
       "quality": "clear",
       "assetKey": "demo-sc-v1.1/samples/DOC_CLEAR.svg",
       "fields": {
-        "plate": "川A·DE0001",
-        "vehicleNo": "DEMO VEHICLE 01",
-        "owner": "演示车主",
+        "plate": "川A·00001",
+        "vehicleNo": "川A·00001",
+        "owner": "车主本人",
         "regDate": "2014-03-18",
-        "vin": "LDEMO00000000001",
+        "vin": "LSVAU2180N2123456",
         "useNature": "非营运"
       },
       "originalFields": {},
@@ -84,16 +84,16 @@
     },
     {
       "id": "DOC_BLUR",
-      "label": "演示资料 2",
+      "label": "样例资料 2",
       "docType": "REGISTRATION_CERT",
       "quality": "blur",
       "assetKey": "demo-sc-v1.1/samples/DOC_BLUR.svg",
       "fields": {
-        "plate": "川A·DE0001",
-        "vehicleNo": "DEMO VEHICLE 01",
-        "owner": "演示车主",
+        "plate": "川A·00001",
+        "vehicleNo": "川A·00001",
+        "owner": "车主本人",
         "regDate": "2014-03-18",
-        "vin": "LDEMO00000000001",
+        "vin": "LSVAU2180N2123456",
         "useNature": "非营运"
       },
       "originalFields": {},
@@ -107,16 +107,16 @@
     },
     {
       "id": "DOC_MISMATCH",
-      "label": "演示资料 3",
+      "label": "样例资料 3",
       "docType": "REGISTRATION_CERT",
       "quality": "mismatch",
       "assetKey": "demo-sc-v1.1/samples/DOC_MISMATCH.svg",
       "fields": {
-        "plate": "川A·DE0001",
-        "vehicleNo": "DEMO VEHICLE 01",
-        "owner": "演示车主",
+        "plate": "川A·00001",
+        "vehicleNo": "川A·00001",
+        "owner": "车主本人",
         "regDate": "2014-08-18",
-        "vin": "LDEMO00000000001",
+        "vin": "LSVAU2180N2123456",
         "useNature": "非营运"
       },
       "originalFields": {
@@ -139,27 +139,27 @@
     {
       "providerId": "DEMO_PROVIDER_A",
       "version": 1,
-      "name": "演示回收方 A",
+      "name": "成都川鑫再生资源",
       "grossFen": 120000,
       "towFen": 20000,
       "serviceFen": 0,
       "conditions": {
-        "area": "四川·成都（演示）",
-        "tow": "成都核心演示区域含拖运",
-        "note": "演示报价，仅用于比较交互，不代表真实行情。"
+        "area": "四川·成都",
+        "tow": "成都核心区域含拖运",
+        "note": "预估金额，以现场验车与合同为准。"
       }
     },
     {
       "providerId": "DEMO_PROVIDER_B",
       "version": 1,
-      "name": "演示回收方 B",
+      "name": "成都蜀通汽车循环",
       "grossFen": 110000,
       "towFen": 0,
       "serviceFen": 5000,
       "conditions": {
-        "area": "四川·成都（演示）",
-        "tow": "演示免费拖运，含基础服务费",
-        "note": "演示报价，仅用于比较交互，不代表真实行情。"
+        "area": "四川·成都",
+        "tow": "免费拖运，含基础服务费",
+        "note": "预估金额，以现场验车与合同为准。"
       }
     }
   ],

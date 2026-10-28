@@ -56,7 +56,7 @@ export async function attachEvidence(input: {
         input.type,
         input.source ?? "user",
         input.status ?? "provided",
-        input.description ?? "演示凭证",
+        input.description ?? "凭证",
       ],
     );
     await appendEvent(client, input.caseId, {

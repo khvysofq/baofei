@@ -20,18 +20,18 @@ import { appendEvent } from "@/lib/services/events";
 import { loadCaseState, syncTasks } from "@/lib/services/plan";
 
 export const SLOTS = [
-  { id: "DEMO_SLOT_A", label: "演示时段 A 上午", window: "09:00–12:00（演示）" },
-  { id: "DEMO_SLOT_B", label: "演示时段 B 下午", window: "13:00–17:00（演示）" },
+  { id: "DEMO_SLOT_A", label: "上午 09:00–12:00", window: "09:00–12:00" },
+  { id: "DEMO_SLOT_B", label: "下午 13:00–17:00", window: "13:00–17:00" },
 ] as const;
 
 export function defaultLocation(fields: CaseField[]): string {
   const region = fieldValue(fields, "vehicleLocation") as RegionValue | null;
   if (!region?.city) return "";
-  return `${region.city}·演示停车点`;
+  return `${region.city}·车辆停放点`;
 }
 
 function slotLabel(slotId: string): string {
-  return SLOTS.find((s) => s.id === slotId)?.label ?? "演示时段待确认";
+  return SLOTS.find((s) => s.id === slotId)?.label ?? "时段待确认";
 }
 
 function drivableLabel(value: boolean | null): string {
@@ -81,7 +81,7 @@ function buildSummary(
       service: formatYuan(quote.serviceFen),
       net: formatYuan(quote.netFen),
     },
-    note: "资料不会实际发送；本预约仅保存在演示环境。",
+    note: "资料发送项目以本摘要为准；预约记录保存在办理档案中。",
   };
 }
 
@@ -107,7 +107,7 @@ export async function getAppointmentView(caseId: string) {
     slots: SLOTS,
     defaultLocation: defaultLocation(state.fields),
     drivable,
-    handoverPerson: active?.handoverPerson ?? "演示车主",
+    handoverPerson: active?.handoverPerson ?? "车主本人",
     materials,
     missingTask: state.plan.documentsStatus === "missing_registration" && !missingResolved
       ? state.tasks.find((t) => t.kind === "review_missing_document") ?? null
@@ -127,7 +127,7 @@ export async function getAppointmentView(caseId: string) {
             active.slotId,
             active.location,
             active.drivable,
-            active.handoverPerson ?? "演示车主",
+            active.handoverPerson ?? "车主本人",
           )
         : quote
           ? buildSummary(
@@ -136,7 +136,7 @@ export async function getAppointmentView(caseId: string) {
               SLOTS[0].id,
               defaultLocation(state.fields),
               drivable,
-              "演示车主",
+              "车主本人",
             )
           : null,
     profileVersion: state.case.profileVersion,
@@ -191,8 +191,8 @@ export async function confirmAppointment(
 ): Promise<AppointmentRecord> {
   const { caseId, idempotencyKey } = input;
   if (!idempotencyKey) throw new Error("缺少 idempotencyKey");
-  if (!SLOTS.some((s) => s.id === input.slotId)) throw new Error("请选择演示时段");
-  if (!input.location.trim()) throw new Error("请选择演示停车点");
+  if (!SLOTS.some((s) => s.id === input.slotId)) throw new Error("请选择预约时段");
+  if (!input.location.trim()) throw new Error("请选择车辆停放点");
   if (!input.handoverPerson.trim()) throw new Error("请填写交接人");
 
   const cachedId = await cacheGet(idemKey(idempotencyKey));
@@ -226,7 +226,7 @@ export async function confirmAppointment(
       input.handoverPerson,
     );
     const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const appointmentNo = `DEMO-APT-${stamp}-${randomUUID().slice(0, 4).toUpperCase()}`;
+    const appointmentNo = `SC-APT-${stamp}-${randomUUID().slice(0, 4).toUpperCase()}`;
 
     let appointment: AppointmentRecord;
     if (active && active.status === "needs_reconfirmation") {
@@ -341,7 +341,7 @@ export async function rescheduleAppointment(
   caseId: string,
   input: { slotId: string; location?: string; handoverPerson?: string; drivable?: boolean | null },
 ): Promise<AppointmentRecord> {
-  if (!SLOTS.some((s) => s.id === input.slotId)) throw new Error("请选择演示时段");
+  if (!SLOTS.some((s) => s.id === input.slotId)) throw new Error("请选择预约时段");
   const result = await withTransaction(async (client) => {
     const caseRecord = await loadCase(caseId, client);
     if (!caseRecord) throw new Error("案件不存在");
@@ -355,7 +355,7 @@ export async function rescheduleAppointment(
     if (quoteRow.rows.length === 0) throw new Error("预约关联的报价不存在");
     const quote = mapQuoteRow(quoteRow.rows[0]);
     const location = input.location?.trim() || active.location;
-    const handoverPerson = input.handoverPerson?.trim() || active.handoverPerson || "演示车主";
+    const handoverPerson = input.handoverPerson?.trim() || active.handoverPerson || "车主本人";
     const drivable = input.drivable === undefined ? active.drivable : input.drivable;
     const summary = buildSummary(quote, fields, input.slotId, location, drivable, handoverPerson);
     const updated = await client.query(
@@ -378,7 +378,7 @@ export async function rescheduleAppointment(
 
 export async function cancelAppointment(
   caseId: string,
-  reason = "用户取消（演示）",
+  reason = "用户取消",
 ): Promise<AppointmentRecord> {
   const result = await withTransaction(async (client) => {
     const caseRecord = await loadCase(caseId, client);

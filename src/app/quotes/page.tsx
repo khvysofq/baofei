@@ -65,7 +65,7 @@ export default function QuotesPage() {
       });
       await load();
       await refresh();
-      setMessage("已记住此演示报价及版本。更换服务方需要重新确认预约摘要。");
+      setMessage("已记住此报价及版本。更换服务方需要重新确认预约摘要。");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "选择失败");
     } finally {
@@ -75,30 +75,30 @@ export default function QuotesPage() {
 
   if (!caseId) return <EmptyCase />;
   if (!view) {
-    return <p className="mono mt-6 text-sm text-dim">正在加载演示报价…</p>;
+    return <p className="mono mt-6 text-sm text-dim">正在加载报价…</p>;
   }
 
   return (
     <div className="mx-auto max-w-5xl">
       <div className="hazard mb-5" aria-hidden />
-      <p className="label text-rust">P4 · 演示报价</p>
+      <p className="label text-rust">P4 · 回收报价</p>
       <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-4xl">
-        比较费用，选择演示回收方
+        比较费用，选择回收方
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-dim">
         预计实收 = 回收款 − 拖车费 − 服务费。金额按整数分计算，未知费用显示“待确认”，不会当成 0。
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Tag tone="warn">演示金额 仅用于比较交互</Tag>
-        <Tag>资质：演示占位 未查询真实资质</Tag>
+        <Tag tone="warn">预估金额 · 以现场验车为准</Tag>
+        <Tag>资质信息以企业公示为准</Tag>
         {view.quotes[0] && <Tag>报价版本 v{view.quotes[0].version}</Tag>}
       </div>
 
       {snapshot?.policy.status === "unverified_city" && (
         <div className="mt-4">
           <Notice tone="warn" title="该市州本地规则待核实">
-            {snapshot.policy.notes} 可继续基础模拟，但不会套用成都要求，也不承诺服务范围。
+            {snapshot.policy.notes} 可继续基础流程，但不会套用成都要求，也不承诺服务范围。
           </Notice>
         </div>
       )}
@@ -118,14 +118,14 @@ export default function QuotesPage() {
             <Panel key={quote.id} strong={selected} className={selected ? "border-rust/60" : ""}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="label">DEMO PROVIDER {quote.providerId.slice(-1)}</p>
+                  <p className="label">合作回收方 {quote.providerId.slice(-1)}</p>
                   <h2 className="mt-1 text-xl font-black">{quote.providerName}</h2>
                 </div>
-                {selected ? <Tag tone="acid">已选择 · v{quote.version}</Tag> : <Tag>演示</Tag>}
+                {selected ? <Tag tone="acid">已选择 · v{quote.version}</Tag> : <Tag>可选</Tag>}
               </div>
 
               <p className="mt-2 text-xs text-dim">
-                资质位：演示占位 未查询真实资质
+                资质信息以企业公示为准
               </p>
 
               <dl className="mt-4 space-y-2 text-sm">
@@ -168,9 +168,9 @@ export default function QuotesPage() {
               </div>
 
               <div className="mt-4 space-y-1 text-xs text-dim">
-                <p>适用演示区域：{quote.conditions.area ?? "待确认"}</p>
+                <p>适用区域：{quote.conditions.area ?? "待确认"}</p>
                 <p>拖运条件：{quote.conditions.tow ?? "待确认"}</p>
-                <p>{quote.conditions.note ?? "演示报价，不代表真实行情。"}</p>
+                <p>{quote.conditions.note ?? "报价以现场验车与合同为准。"}</p>
                 {quote.conditions.versionNote && (
                   <p className="text-warn">{quote.conditions.versionNote}</p>
                 )}
@@ -188,7 +188,7 @@ export default function QuotesPage() {
                     ? "保存中…"
                     : quote.netFen === null
                       ? "费用待确认，暂不能选择"
-                      : "选择此演示报价"}
+                      : "选择此报价"}
               </button>
             </Panel>
           );
@@ -197,7 +197,7 @@ export default function QuotesPage() {
 
       {view.quotes.length === 0 && (
         <Notice tone="warn" title="暂无报价">
-          请先返回计划页确认车辆所在地与行驶状况，系统会重新生成演示报价。
+          请先返回计划页确认车辆所在地与行驶状况，系统会重新生成报价。
         </Notice>
       )}
 
@@ -210,7 +210,7 @@ export default function QuotesPage() {
           <div>
             <p className="label">下一步</p>
             <p className="mt-1 text-sm text-dim">
-              选择报价后确认模拟预约。报价或材料需要重新确认时，不能用旧版本直接提交。
+              选择报价后确认预约。报价或材料需要重新确认时，不能用旧版本直接提交。
             </p>
           </div>
           <button
@@ -219,7 +219,7 @@ export default function QuotesPage() {
             disabled={!selectionValid}
             onClick={() => router.push("/appointment")}
           >
-            下一步：确认模拟预约
+            下一步：确认预约
           </button>
         </div>
         <div className="mt-3 flex flex-wrap gap-3 text-sm">

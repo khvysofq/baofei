@@ -25,7 +25,7 @@ function towCondition(
   if (drivable === false) {
     return templateTowFen > 0
       ? `开不动，含拖运费 ¥${(templateTowFen / 100).toFixed(0)}`
-      : "开不动；本档演示免费拖运";
+      : "开不动；本档免费拖运";
   }
   if (drivable === true) return "车辆可行驶，不计拖车费";
   return "拖运条件待确认（行驶状况未知）";
@@ -34,7 +34,7 @@ function towCondition(
 function regionText(region: RegionValue | null): string {
   if (!region?.province) return "所在地待确认";
   if (!region.city) return `${region.province}·市州待确认`;
-  return `${region.province}·${region.city}（演示）`;
+  return `${region.province}·${region.city}`;
 }
 
 export function quoteFees(
@@ -95,7 +95,7 @@ export async function createQuotesInTx(
       ...t.conditions,
       area: regionText(vehicleLocation),
       tow: towCondition(fees.towFen, t.tow_fen, drivable),
-      note: "演示金额，仅用于比较交互；不代表真实行情。",
+      note: "预估金额，以现场验车与合同为准。",
     };
     const result = await client.query(
       `INSERT INTO quotes
@@ -171,7 +171,7 @@ export async function regenerateQuotesInTx(
       ...t.conditions,
       area: regionText(vehicleLocation),
       tow: towCondition(fees.towFen, t.tow_fen, drivable),
-      note: "演示金额，仅用于比较交互；不代表真实行情。",
+      note: "预估金额，以现场验车与合同为准。",
       versionNote: "因车辆所在地或行驶状况变化，报价已重新生成，请重新确认。",
     };
     await client.query(
@@ -234,7 +234,7 @@ export async function selectQuote(
        ORDER BY version DESC LIMIT 1`,
       [caseId, providerId],
     );
-    if (result.rows.length === 0) throw new Error("未找到该演示回收方的有效报价");
+    if (result.rows.length === 0) throw new Error("未找到该回收方的有效报价");
     const quote = mapRow(result.rows[0]);
     if (quote.netFen === null) {
       throw new Error("费用条件尚未确认（预计实收待确认），不能选择此报价。");
@@ -250,7 +250,7 @@ export async function selectQuote(
         providerId,
         version: quote.version,
         netFen: quote.netFen,
-        label: "演示报价选择",
+        label: "报价选择",
       },
       source: "user",
       demo: true,

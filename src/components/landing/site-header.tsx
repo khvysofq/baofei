@@ -3,7 +3,7 @@ import { NavLinks } from "./nav-links";
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-8 z-30 border-b border-line bg-void/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 border-b border-line bg-void/95 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"
@@ -19,7 +19,7 @@ export function SiteHeader() {
         <NavLinks />
 
         <Link href="/start" className="btn-primary text-sm">
-          进入演示
+          立即办理
         </Link>
       </div>
     </header>

@@ -27,7 +27,7 @@ export const TASK_META: Record<
 > = {
   unsupported_case: {
     title: "先核对特殊情形",
-    owner: "演示协助角色",
+    owner: "协助角色",
     reason: "存在抵押、权属不明或非支持车型等情况，常规办理判定先暂停。",
   },
   confirm_authorization: {
@@ -37,21 +37,21 @@ export const TASK_META: Record<
   },
   review_missing_document: {
     title: "核对登记证缺失的处理方式",
-    owner: "演示协助角色",
+    owner: "协助角色",
     reason: "登记证暂时缺失，需核对拟办理所在地接受的情况说明或替代材料。",
   },
   confirm_materials: {
     title: "确认材料信息",
     owner: "你",
-    reason: "计划内的材料尚未全部确认，请选择演示资料并核对字段。",
+    reason: "计划内的材料尚未全部确认，请上传照片并核对字段。",
   },
   confirm_quote: {
-    title: "选择并确认演示报价",
+    title: "选择并确认报价",
     owner: "你",
     reason: "还没有有效报价，或报价因情况变化需要重新确认。",
   },
   confirm_appointment: {
-    title: "确认模拟预约",
+    title: "确认预约",
     owner: "你",
     reason: "需要确认服务方、时段、地点与费用摘要。",
   },
@@ -62,13 +62,13 @@ export const TASK_META: Record<
   },
   verify_recovery_certificate: {
     title: "核对回收证明",
-    owner: "演示协助角色",
+    owner: "协助角色",
     reason: "回收证明已提供，仍需核对车辆信息与证明内容。",
   },
   verify_deregistration: {
     title: "核对注销结果",
     owner: "登记地交管受理渠道",
-    reason: "注销证明已提供，尚未完成演示核验；交车或回收证明不等于注销完成。",
+    reason: "注销证明已提供，尚未完成核验；交车或回收证明不等于注销完成。",
   },
   confirm_payment: {
     title: "确认回收款到账",
@@ -215,7 +215,7 @@ export function stageNote(snapshot: PlanSnapshot): string {
   ) {
     return snapshot.intent === "replace"
       ? "报废与结算阶段完成，补贴仍待官方渠道核实。"
-      : "本次报废演示已完成。所有完成状态均来自显式演示事件。";
+      : "本次报废已完成。所有完成状态均来自显式事件。";
   }
   if (snapshot.handedOver) {
     return "车辆已交接，注销与到账仍需分别确认，时间流逝不会自动完成。";

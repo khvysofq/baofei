@@ -41,7 +41,7 @@ export function HeroTicker() {
       <div className="motion-reduce:hidden">
         <div className="flex items-center justify-between gap-3">
           <p className="mono text-[10px] uppercase tracking-[0.18em] text-dim">
-            PROCESS SIM · 8S LOOP
+            办理流程 · 六步
           </p>
           <p className="mono text-[10px] tabular text-rust">{step.no} / 06</p>
         </div>

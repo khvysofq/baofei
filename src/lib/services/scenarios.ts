@@ -10,6 +10,6 @@ export async function listScenarios() {
     name: String(row.name),
     intakeText: String(row.intake_text),
     payload: row.payload,
-    label: "成都演示案例",
+    label: "常见情况",
   }));
 }

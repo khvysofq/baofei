@@ -94,7 +94,7 @@ export async function selectSample(
   sampleId: string,
 ): Promise<void> {
   if (!DOCUMENT_META[type]) throw new Error("不支持的材料类型");
-  if (!isSampleId(sampleId)) throw new Error("只能选择内置演示资料");
+  if (!isSampleId(sampleId)) throw new Error("只能选择内置样例材料");
   await withTransaction(async (client) => {
     const caseRecord = await loadCase(caseId, client);
     if (!caseRecord) throw new Error("案件不存在");
@@ -104,7 +104,7 @@ export async function selectSample(
     const sample = await client.query("SELECT * FROM document_samples WHERE id = $1", [
       sampleId,
     ]);
-    if (sample.rows.length === 0) throw new Error("演示样例不存在");
+    if (sample.rows.length === 0) throw new Error("样例材料不存在");
     const s = sample.rows[0];
     const vehicle = await client.query(
       "SELECT id FROM vehicles WHERE case_id = $1",
@@ -190,7 +190,7 @@ export async function confirmDocument(caseId: string, type: DocumentType): Promi
       [caseId, type],
     );
     if (doc.rows.length === 0 || !doc.rows[0].sample_id) {
-      throw new Error("请先选择一份演示资料");
+      throw new Error("请先上传一份照片");
     }
     const row = doc.rows[0];
     const issues = (row.issues ?? []) as DocumentIssue[];
@@ -228,7 +228,7 @@ export async function resolveMismatch(
         payload: {
           topic: "material_mismatch",
           documentType: type,
-          note: "字段不一致，需要演示协助确认；不视为已确认。",
+          note: "字段不一致，需要协助确认；不视为已确认。",
         },
         source: "user",
         demo: true,
@@ -305,7 +305,7 @@ export async function markRegistrationMissing(caseId: string): Promise<void> {
       type: "material_missing",
       payload: {
         documentType: "REGISTRATION_CERT",
-        note: "登记证暂时找不到；说明为演示核对，不代表官方批准。",
+        note: "登记证暂时找不到；说明为核对记录，不代表官方批准。",
       },
       source: "user",
       demo: true,

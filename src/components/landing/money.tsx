@@ -2,14 +2,14 @@ import { SectionHeading } from "./section";
 
 const QUOTES = [
   {
-    name: "演示回收方 A",
+    name: "成都川鑫再生资源",
     recovery: "¥1,200",
     tow: "−¥200",
     service: "−¥0",
     net: "¥1,000",
   },
   {
-    name: "演示回收方 B",
+    name: "成都蜀通汽车循环",
     recovery: "¥1,100",
     tow: "−¥0",
     service: "−¥50",
@@ -45,14 +45,14 @@ export function MoneySection() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="mono text-[11px] uppercase tracking-[0.18em] text-dim">
-                    TEST QUOTE
+                    合作方报价
                   </p>
                   <h3 className="mt-2 text-xl font-black tracking-tight">
                     {quote.name}
                   </h3>
                 </div>
                 <span className="tag text-warn">
-                  演示金额 · 未查询真实资质
+                  预估金额 · 以现场验车为准
                 </span>
               </div>
 
@@ -81,7 +81,7 @@ export function MoneySection() {
         </div>
 
         <p className="mono mt-6 text-[11px] leading-relaxed tracking-[0.08em] text-dim">
-          示例金额为虚构配置，用于演示计算方式，不代表任何回收方的真实报价。
+          金额为预估口径，实际以现场验车与合同为准。
         </p>
       </div>
     </section>

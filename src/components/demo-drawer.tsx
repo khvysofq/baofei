@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useCase } from "@/components/case-provider";
 import { api, downloadJson } from "@/lib/client";
@@ -8,12 +8,30 @@ import { DEMO_STAGES_LABEL } from "@/components/demo-stages";
 
 type DemoResult = { applied: boolean; message: string };
 
+// 只在显式带上 ?demo=1 时显示内部调试入口；默认页面不渲染任何按钮。
+function subscribeDebugFlag() {
+  return () => {};
+}
+
+function readDebugFlag(): boolean {
+  return new URLSearchParams(window.location.search).get("demo") === "1";
+}
+
+function readDebugFlagOnServer(): boolean {
+  return false;
+}
+
 export function DemoDrawer() {
   const { caseId, clearCase, refresh } = useCase();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const enabled = useSyncExternalStore(
+    subscribeDebugFlag,
+    readDebugFlag,
+    readDebugFlagOnServer,
+  );
   const [busy, setBusy] = useState<string | null>(null);
-  const [message, setMessage] = useState<string>("演示控制与用户操作分开记录。");
+  const [message, setMessage] = useState<string>("内部调试与用户操作分开记录。");
 
   async function inject(stage: string) {
     if (!caseId) return;
@@ -58,7 +76,7 @@ export function DemoDrawer() {
     try {
       await api("/api/demo", { method: "POST", json: { action: "reset" } });
       clearCase();
-      setMessage("已重置到 demo-sc-v1.1 种子。");
+      setMessage("已重置到 V1.1 初始数据。");
       router.push("/start");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "重置失败");
@@ -75,7 +93,7 @@ export function DemoDrawer() {
         method: "POST",
         json: { action: "export", caseId },
       });
-      downloadJson(`baofei-demo-${caseId.slice(0, 8)}.json`, data);
+      downloadJson(`baofei-debug-${caseId.slice(0, 8)}.json`, data);
       setMessage("已导出本地测试记录 JSON（不含真实个人信息与证件图像）。");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "导出失败");
@@ -84,6 +102,7 @@ export function DemoDrawer() {
     }
   }
 
+  if (!enabled) return null;
   return (
     <div
       className={`fixed bottom-20 right-3 z-50 lg:bottom-5 lg:right-5 ${
@@ -100,7 +119,7 @@ export function DemoDrawer() {
         >
           <span className="label flex items-center gap-2 text-warn">
             <span className="lamp text-warn" aria-hidden />
-            演示控制
+            内部调试
           </span>
           <span className="mono text-xs text-dim">{open ? "收起 ▲" : "展开 ▼"}</span>
         </button>

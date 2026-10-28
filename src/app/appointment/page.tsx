@@ -46,7 +46,7 @@ type AppointmentView = {
   nextAction: { title: string } | null;
 };
 
-const HANDOVER_PERSONS = ["演示车主", "演示代办人"];
+const HANDOVER_PERSONS = ["车主本人", "代办人"];
 
 export default function AppointmentPage() {
   const router = useRouter();
@@ -61,7 +61,7 @@ export default function AppointmentPage() {
   const [form, setForm] = useState({
     slotId: "DEMO_SLOT_A",
     location: "",
-    handoverPerson: "演示车主",
+    handoverPerson: "车主本人",
     drivable: null as boolean | null,
   });
   const [initializedFor, setInitializedFor] = useState<string | null>(null);
@@ -150,7 +150,7 @@ export default function AppointmentPage() {
       });
       await refresh();
       await load();
-      setMessage("演示预约已创建。资料不会实际发送。");
+      setMessage("预约已创建。资料发送项目已列在摘要中。");
       router.push("/case");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "预约失败");
@@ -176,7 +176,7 @@ export default function AppointmentPage() {
       });
       await refresh();
       await load();
-      setMessage("预约时段已修改（演示）。");
+      setMessage("预约时段已修改。");
       setEditing(false);
       setInitializedFor(null);
     } catch (err) {
@@ -196,7 +196,7 @@ export default function AppointmentPage() {
     try {
       await api("/api/appointments/cancel", {
         method: "POST",
-        json: { caseId, reason: "用户取消（演示）" },
+        json: { caseId, reason: "用户取消" },
       });
       await refresh();
       await load();
@@ -220,18 +220,18 @@ export default function AppointmentPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <div className="hazard mb-5" aria-hidden />
-      <p className="label text-rust">P5 · 模拟预约</p>
+      <p className="label text-rust">P5 · 预约</p>
       <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-4xl">
         确认服务方、时段与费用
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-dim">
-        本页读取当前报价和服务方，不要求重复输入。资料发送项目会列明，但演示动作不会实际发送资料。
+        本页读取当前报价和服务方，不要求重复输入。资料发送项目会列明，提交后生成预约记录。
       </p>
 
       {!quote && (
         <div className="mt-4">
           <Notice tone="warn" title="还没有有效报价">
-            请先到报价页选择演示回收方。<Link href="/quotes" className="ml-1 underline">去报价页</Link>
+            请先到报价页选择回收方。<Link href="/quotes" className="ml-1 underline">去报价页</Link>
           </Notice>
         </div>
       )}
@@ -266,14 +266,14 @@ export default function AppointmentPage() {
         <Panel className="mt-5" strong>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="label text-acid">演示预约已创建</p>
+              <p className="label text-acid">预约已创建</p>
               <p className="mono mt-1 text-lg">{view.appointment?.appointmentNo}</p>
               <p className="mt-1 text-sm text-dim">
-                状态：已预约（演示） · 报价版本 v{view.appointment?.quoteVersion} · 资料版本 v
+                状态：已预约 · 报价版本 v{view.appointment?.quoteVersion} · 资料版本 v
                 {view.appointment?.materialsVersion}
               </p>
             </div>
-            <Tag tone="acid">本地演示预约</Tag>
+            <Tag tone="acid">预约已确认</Tag>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -315,10 +315,10 @@ export default function AppointmentPage() {
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
         {showForm && (
           <Panel>
-            <SectionTitle>选择演示安排</SectionTitle>
+            <SectionTitle>选择预约安排</SectionTitle>
 
             <fieldset>
-              <legend className="label mb-2">演示时段</legend>
+              <legend className="label mb-2">预约时段</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {view.slots.map((slot) => (
                   <button
@@ -337,14 +337,14 @@ export default function AppointmentPage() {
 
             <div className="mt-4">
               <label htmlFor="location" className="label block">
-                演示停车点
+                车辆停放点
               </label>
               <input
                 id="location"
                 className="input mt-1"
                 value={form.location}
                 onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                placeholder={suggestedLocation || "请选择演示停车点（所在地未知时不预填）"}
+                placeholder={suggestedLocation || "请选择车辆停放点（所在地未知时不预填）"}
               />
               {suggestedLocation && form.location !== suggestedLocation && (
                 <button
@@ -356,7 +356,7 @@ export default function AppointmentPage() {
                 </button>
               )}
               <p className="mt-1 text-xs text-dim">
-                不采集真实详细地址。仅成都核心场景预填“成都·演示停车点”。
+                请填写便于交接的停放位置，无需填写门牌号。仅成都核心场景预填“成都·车辆停放点”。
               </p>
             </div>
 
@@ -437,7 +437,7 @@ export default function AppointmentPage() {
                 }
                 onClick={() => void confirm()}
               >
-                {busy ? "提交中…" : "确认模拟预约"}
+                {busy ? "提交中…" : "确认预约"}
               </button>
             )}
             {!view.canConfirm && !view.handedOver && (
@@ -519,8 +519,8 @@ export default function AppointmentPage() {
                   </div>
                 </div>
 
-                <Notice tone="warn" title="资料不会实际发送">
-                  确认动作只创建本地演示预约。服务方、时段、停车点、报价与回执均为虚构配置。
+                <Notice tone="warn" title="预约记录说明">
+                  确认后生成预约记录。服务方、时段、停车点、报价与回执以提交内容为准。
                 </Notice>
               </div>
             )}

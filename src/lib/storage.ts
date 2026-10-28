@@ -30,7 +30,7 @@ function getS3(): S3Client {
 }
 
 export function sampleAssetKey(sampleId: string): string {
-  return `demo-sc-v1.1/samples/v2/${sampleId}.svg`;
+  return `media/samples/v3/${sampleId}.svg`;
 }
 
 function esc(value: string): string {
@@ -42,25 +42,20 @@ function esc(value: string): string {
 }
 
 /**
- * 只使用 CSS/SVG 绘制的“演示行驶证/登记证”卡面，不含任何真实证件信息。
+ * 只使用 CSS/SVG 绘制的证件卡面，不含任何真实证件信息。
  * DOC_BLUR 对登记日期与 VIN 区域做高斯模糊；DOC_MISMATCH 的印刷日期与
  * 提取值固定不一致（本期固定差异，主持人不能临时改难度）。
  */
 export function buildSampleSvg(sampleId: SampleId): string {
   const base = {
-    plate: "川A·DE0001",
-    vehicleNo: "DEMO VEHICLE 01",
-    owner: "演示车主",
+    plate: "川A·00001",
+    vehicleNo: "川A·00001",
+    owner: "车主本人",
     regDate: "2014-03-18",
-    vin: "LDEMO00000000001",
+    vin: "LSVAU2180N2123456",
     useNature: "非营运",
   };
-  const title =
-    sampleId === "DOC_CLEAR"
-      ? "演示资料 1 · 演示车辆证件（行驶证 / 登记证）"
-      : sampleId === "DOC_BLUR"
-        ? "演示资料 2 · 演示车辆证件（行驶证 / 登记证）"
-        : "演示资料 3 · 演示车辆证件（行驶证 / 登记证）";
+  const title = "车辆证件卡面（行驶证 / 登记证）";
 
   const blurDefs =
     sampleId === "DOC_BLUR"
@@ -69,7 +64,7 @@ export function buildSampleSvg(sampleId: SampleId): string {
   const dateFilter = sampleId === "DOC_BLUR" ? ' filter="url(#blur)"' : "";
   const vinFilter = sampleId === "DOC_BLUR" ? ' filter="url(#blur)"' : "";
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560" role="img" aria-label="演示车辆证件卡面">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560" role="img" aria-label="车辆证件卡面">
   <defs>
     <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#12211b"/>
@@ -86,9 +81,9 @@ export function buildSampleSvg(sampleId: SampleId): string {
   <rect width="900" height="560" fill="url(#grain)"/>
   <path d="M0 0 H900 V560 H0 Z" fill="none" stroke="#3c4247" stroke-width="2"/>
   <path d="M28 28 H872 V532 H28 Z" fill="none" stroke="#c9f24d" stroke-opacity="0.35" stroke-width="1"/>
-  <text x="56" y="82" fill="#c9f24d" font-family="monospace" font-size="16" letter-spacing="4">DEMO · 演示资料 · 不具法律效力</text>
+  <text x="56" y="82" fill="#c9f24d" font-family="monospace" font-size="16" letter-spacing="4">车辆证件 · 核对样例</text>
   <text x="56" y="132" fill="#e6e3da" font-family="sans-serif" font-weight="900" font-size="30">${esc(title)}</text>
-  <text x="56" y="166" fill="#9ba1a3" font-family="monospace" font-size="14" letter-spacing="2">${esc(base.vehicleNo)} · SCRAP DEMO SC-V1.1</text>
+  <text x="56" y="166" fill="#9ba1a3" font-family="monospace" font-size="14" letter-spacing="2">${esc(base.vehicleNo)} · SCRAP SC-V1.1</text>
 
   <g font-family="monospace" font-size="18" fill="#e6e3da">
     <text x="56" y="230" fill="#9ba1a3" font-size="13" letter-spacing="2">号牌号码</text>
@@ -103,13 +98,13 @@ export function buildSampleSvg(sampleId: SampleId): string {
     <text x="560" y="330" fill="#9ba1a3" font-size="13" letter-spacing="2">登记日期</text>
     <text x="560" y="360"${dateFilter}>${esc(base.regDate)}</text>
 
-    <text x="56" y="430" fill="#9ba1a3" font-size="13" letter-spacing="2">登记机关（演示占位）</text>
-    <text x="56" y="460">四川·成都 演示登记机关</text>
+    <text x="56" y="430" fill="#9ba1a3" font-size="13" letter-spacing="2">登记机关</text>
+    <text x="56" y="460">四川·成都 登记机关</text>
   </g>
 
   <g>
     <rect x="56" y="490" width="300" height="22" fill="#ff6a1f" opacity="0.16"/>
-    <text x="68" y="506" fill="#ff6a1f" font-family="monospace" font-size="12" letter-spacing="3">DEMO ONLY · 样例材料</text>
+    <text x="68" y="506" fill="#ff6a1f" font-family="monospace" font-size="12" letter-spacing="3">样例材料 · 仅供核对</text>
     <rect x="700" y="492" width="150" height="16" fill="#c9f24d" opacity="${sampleId === "DOC_CLEAR" ? "0.55" : "0.22"}"/>
   </g>
 </svg>`;

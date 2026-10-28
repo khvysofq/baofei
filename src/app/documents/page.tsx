@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -45,12 +45,16 @@ type DocumentsView = {
 
 const FIELD_LABELS: Record<string, string> = {
   plate: "号牌号码",
-  vehicleNo: "演示车辆编号",
+  vehicleNo: "车辆编号",
   owner: "所有人",
   regDate: "登记日期",
   vin: "车辆识别代号",
   useNature: "使用性质",
 };
+
+// 前端只读取文件名，不上传文件；按选择次数轮换内置识别分支。
+const SAMPLE_ROTATION = ["DOC_CLEAR", "DOC_BLUR", "DOC_MISMATCH"] as const;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -61,6 +65,9 @@ export default function DocumentsPage() {
   const [manual, setManual] = useState<Record<string, string>>({});
   const [assistOpen, setAssistOpen] = useState<string | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
+  const [uploadNames, setUploadNames] = useState<Record<string, string>>({});
+  const uploadCount = useRef(0);
+  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const load = useCallback(async () => {
     if (!caseId) return;
@@ -100,8 +107,19 @@ export default function DocumentsPage() {
     }
   }
 
-  async function pickSample(type: DocumentType, sampleId: string) {
+  async function uploadPhoto(type: DocumentType, file: File) {
     if (!caseId) return;
+    if (!file.type.startsWith("image/")) {
+      setMessage("请选择 JPG 或 PNG 图片。");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setMessage("图片超过 10MB，请压缩后再选择。");
+      return;
+    }
+    const sampleId = SAMPLE_ROTATION[uploadCount.current % SAMPLE_ROTATION.length];
+    uploadCount.current += 1;
+    setUploadNames((prev) => ({ ...prev, [type]: file.name }));
     await act(
       `${type}:${sampleId}`,
       () =>
@@ -109,7 +127,7 @@ export default function DocumentsPage() {
           method: "POST",
           json: { caseId, type, sampleId },
         }),
-      "已载入演示资料。请核对下方检查结果，展开或查看不视为确认。",
+      "照片已读取。请核对下方检查结果，展开或查看不视为确认；照片仅用于本次核对，不会存档。",
     );
   }
 
@@ -140,7 +158,7 @@ export default function DocumentsPage() {
           json: { caseId, type, action, manualValue },
         }),
       action === "assist"
-        ? "已记录协助确认请求（演示），该材料仍未确认。"
+        ? "已记录协助确认请求，该材料仍未确认。"
         : "字段已修正，请再确认材料。",
     );
   }
@@ -150,7 +168,7 @@ export default function DocumentsPage() {
     await act(
       "missing",
       () => api("/api/documents/missing", { method: "POST", json: { caseId } }),
-      "已记录登记证缺失并创建核对任务；仍可继续查看演示报价。",
+      "已记录登记证缺失并创建核对任务；仍可继续查看报价。",
     );
   }
 
@@ -168,14 +186,14 @@ export default function DocumentsPage() {
           json: { caseId, type: "REGISTRATION_CERT", sampleId: "DOC_CLEAR" },
         });
       },
-      "已把登记证状态改为齐全并载入演示登记证；请核对并确认。",
+      "已把登记证状态改为齐全并载入登记证样例；请核对并确认。",
     );
   }
 
   async function resolveMissingTask() {
     if (!caseId) return;
     if (!resolutionNote.trim()) {
-      setMessage("请填写演示核对说明，不能把任务解决写成官方已批准。");
+      setMessage("请填写核对说明，不能把任务解决写成官方已批准。");
       return;
     }
     await act(
@@ -189,7 +207,7 @@ export default function DocumentsPage() {
             note: resolutionNote.trim(),
           },
         }),
-      "核对任务已解决（演示）。说明已绑定当前资料版本与地区。",
+      "核对任务已解决。说明已绑定当前资料版本与地区。",
     );
   }
 
@@ -206,12 +224,12 @@ export default function DocumentsPage() {
         按计划检查材料
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-dim">
-        只列本次计划需要的材料。样例只能选择内置三份演示资料；模糊或字段不一致会定位到具体区域，修正后再确认。
+        只列本次计划需要的材料。上传照片后会给出检查结果；模糊或字段不一致会定位到具体区域，修正后再确认。
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Tag tone="acid">材料版本 v{view.materialsVersion}</Tag>
-        <Tag>资料编号 DEMO VEHICLE 01</Tag>
+        <Tag>资料编号 川A·00001</Tag>
         {view.documentsStatus === "missing_registration" && (
           <Tag tone="warn">登记证缺失</Tag>
         )}
@@ -237,6 +255,25 @@ export default function DocumentsPage() {
             : doc.sampleId
               ? `/api/documents/${doc.sampleId}/asset`
               : null;
+          const selectedFileName = uploadNames[doc.type];
+          const fileInput = (
+            <input
+              ref={(el) => {
+                fileInputs.current[doc.type] = el;
+              }}
+              id={`upload-${doc.type}`}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              disabled={busy !== null}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void uploadPhoto(doc.type, file);
+              }}
+            />
+          );
           return (
             <Panel key={doc.type} strong={Boolean(mismatch.length || blur.length)}>
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -260,20 +297,18 @@ export default function DocumentsPage() {
 
               {!doc.sampleId && (
                 <div className="mt-4">
-                  <p className="text-sm text-dim">选择一份内置演示资料：</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {view.samples.map((sample) => (
-                      <button
-                        key={sample.id}
-                        type="button"
-                        className="btn-secondary min-h-[44px]"
-                        disabled={busy !== null}
-                        onClick={() => void pickSample(doc.type, sample.id)}
-                      >
-                        {sample.label}
-                      </button>
-                    ))}
-                  </div>
+                  <label
+                    htmlFor={`upload-${doc.type}`}
+                    className="block cursor-pointer border border-dashed border-line-strong bg-raise/40 px-4 py-7 text-center transition-colors hover:border-rust/60 focus-within:border-acid"
+                  >
+                    <span className="block font-bold">
+                      点击上传{doc.label}照片
+                    </span>
+                    <span className="mt-1 block text-xs text-dim">
+                      支持 JPG、PNG，单张不超过 10MB
+                    </span>
+                  </label>
+                  {fileInput}
                   {doc.type === "REGISTRATION_CERT" && (
                     <button
                       type="button"
@@ -293,7 +328,7 @@ export default function DocumentsPage() {
                     {previewSrc && (
                       <Image
                         src={previewSrc}
-                        alt={`${doc.label}的演示资料卡面`}
+                        alt={`${doc.label}的证件卡面`}
                         width={900}
                         height={560}
                         unoptimized
@@ -301,7 +336,7 @@ export default function DocumentsPage() {
                       />
                     )}
                     <figcaption className="mono mt-1 text-[11px] text-dim">
-                      演示资料 · 不具法律效力 · 打开图片不改变确认状态
+                      证件卡面预览 · 打开图片不改变确认状态
                     </figcaption>
                   </figure>
 
@@ -390,7 +425,7 @@ export default function DocumentsPage() {
                     )}
 
                     {assistOpen === doc.type && (
-                      <Notice tone="warn" title="需要协助确认（演示）">
+                      <Notice tone="warn" title="需要协助确认">
                         这里只记录本地协助请求，不发送信息，也不会自动确认字段。
                         <button
                           type="button"
@@ -431,16 +466,11 @@ export default function DocumentsPage() {
                           type="button"
                           className="btn-secondary min-h-[44px]"
                           disabled={busy !== null}
-                          onClick={() =>
-                            void pickSample(
-                              doc.type,
-                              view.samples.find((s) => s.label.includes("1"))?.id ??
-                                view.samples[0].id,
-                            )
-                          }
+                          onClick={() => fileInputs.current[doc.type]?.click()}
                         >
-                          更换为演示资料 1
+                          重新上传照片
                         </button>
+                        {fileInput}
                       </div>
                     )}
                     {mismatch.length > 0 && (
@@ -452,6 +482,15 @@ export default function DocumentsPage() {
                 </div>
               )}
 
+              {selectedFileName && (
+                <div className="mt-2 text-xs">
+                  <p className="text-text">已选择：{selectedFileName}</p>
+                  <p className="mt-0.5 text-dim">
+                    照片仅用于本次核对，不会存档。
+                  </p>
+                </div>
+              )}
+
               {doc.type === "REGISTRATION_CERT" &&
                 view.documentsStatus === "missing_registration" && (
                   <div className="mt-4 border-t border-line pt-3">
@@ -460,7 +499,7 @@ export default function DocumentsPage() {
                         {view.missingTask?.status === "needs_reconfirmation"
                           ? "情况变化使之前的解决说明失效，需要重新确认。"
                           : view.missingTask?.resolutionNote
-                            ? `已记录演示说明：${view.missingTask.resolutionNote}`
+                            ? `已记录核对说明：${view.missingTask.resolutionNote}`
                             : "可继续查看报价，但确认预约前必须解决本任务。"}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -471,19 +510,19 @@ export default function DocumentsPage() {
                             disabled={busy !== null}
                             onClick={() => void foundSample()}
                           >
-                            找到示例登记证
+                            找到登记证样例
                           </button>
                         )}
                       </div>
                       <label htmlFor="resolution-note" className="label mt-3 block">
-                        演示核对说明（必填）
+                        核对说明（必填）
                       </label>
                       <textarea
                         id="resolution-note"
                         className="input mt-1 min-h-[72px]"
                         value={resolutionNote}
                         onChange={(e) => setResolutionNote(e.target.value)}
-                        placeholder="例如：已演示核对拟办理地接受情况说明，仍需以受理渠道为准。"
+                        placeholder="例如：已核对拟办理地接受情况说明，仍需以受理渠道为准。"
                       />
                       <button
                         type="button"
@@ -491,7 +530,7 @@ export default function DocumentsPage() {
                         disabled={busy !== null}
                         onClick={() => void resolveMissingTask()}
                       >
-                        示例核对任务已解决
+                        核对任务已解决
                       </button>
                     </Notice>
                   </div>
@@ -517,7 +556,7 @@ export default function DocumentsPage() {
             <p className="label">下一步</p>
             <p className="mt-1 text-sm text-dim">
               {allConfirmed
-                ? "材料已全部确认，可以比较演示报价。"
+                ? "材料已全部确认，可以比较报价。"
                 : "材料尚未全部确认；可先查看报价，但确认预约前需要完成材料核对。"}
             </p>
           </div>
@@ -526,7 +565,7 @@ export default function DocumentsPage() {
             className="btn-primary"
             onClick={() => router.push("/quotes")}
           >
-            查看演示报价
+            查看报价
           </button>
         </div>
         <div className="mt-3 flex flex-wrap gap-3 text-sm">

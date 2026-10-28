@@ -40,7 +40,7 @@ describe("服务层验收（A07 A09 A11 A12 A13 A14 A15）", () => {
     const b = snapshot!.quotes.find((q) => q.providerId === "DEMO_PROVIDER_B");
     expect(a?.netFen).toBe(100000);
     expect(b?.netFen).toBe(105000);
-    expect(caseNo).toMatch(/^SC-DEMO-/);
+    expect(caseNo).toMatch(/^SC-/);
   });
 
   it("A09：重复点击确认只生成一张预约", async () => {
@@ -56,16 +56,16 @@ describe("服务层验收（A07 A09 A11 A12 A13 A14 A15）", () => {
       caseId,
       idempotencyKey: key,
       slotId: "DEMO_SLOT_B",
-      location: "成都·演示停车点",
-      handoverPerson: "演示车主",
+      location: "成都·车辆停放点",
+      handoverPerson: "车主本人",
       drivable: false,
     });
     const second = await confirmAppointment({
       caseId,
       idempotencyKey: key,
       slotId: "DEMO_SLOT_B",
-      location: "成都·演示停车点",
-      handoverPerson: "演示车主",
+      location: "成都·车辆停放点",
+      handoverPerson: "车主本人",
       drivable: false,
     });
     expect(second.id).toBe(first.id);
@@ -98,7 +98,7 @@ describe("服务层验收（A07 A09 A11 A12 A13 A14 A15）", () => {
       vehicleId,
       type: "DEREGISTRATION_CERTIFICATE",
       status: "provided",
-      description: "演示注销证明样例",
+      description: "注销证明样例",
     });
     const snapshot = await getCaseSnapshot(caseId);
     expect(snapshot!.tracks.find((t) => t.key === "deregistration")?.status).toBe(
@@ -191,7 +191,7 @@ describe("服务层验收（A07 A09 A11 A12 A13 A14 A15）", () => {
     await resolveTask(
       created.caseId,
       "review_missing_document",
-      "演示核对：拟办理地接受情况说明，仍需以受理渠道为准。",
+      "核对说明：拟办理地接受情况说明，仍需以受理渠道为准。",
     );
     snapshot = await getCaseSnapshot(created.caseId);
     task = snapshot!.tasks.find((t) => t.kind === "review_missing_document");

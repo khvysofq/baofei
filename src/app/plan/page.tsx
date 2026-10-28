@@ -282,7 +282,7 @@ export default function PlanPage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Tag tone="rust">成都演示案例</Tag>
+          <Tag tone="rust">常见情况</Tag>
           {subsidyActive && <Tag tone="acid">补贴待办</Tag>}
         </div>
       </div>

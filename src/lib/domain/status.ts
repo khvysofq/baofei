@@ -59,14 +59,14 @@ const RECOVERY_LABELS: Record<string, [string, TrackState["tone"]]> = {
   not_selected: ["未选择", "neutral"],
   awaiting_booking: ["待预约", "waiting"],
   awaiting_handover: ["待交车", "waiting"],
-  handed_over: ["已交接（演示）", "done"],
+  handed_over: ["已交接", "done"],
 };
 
 const DEREG_LABELS: Record<string, [string, TrackState["tone"]]> = {
   not_started: ["未开始", "neutral"],
   awaiting_materials: ["待材料", "waiting"],
   pending_check: ["已提供 待核验", "warn"],
-  demo_verified: ["演示核验完成", "done"],
+  demo_verified: ["已核验", "done"],
   rejected: ["核对未通过", "danger"],
 };
 
@@ -94,7 +94,7 @@ export const TRACK_META: Record<string, { label: string; next: string }> = {
   },
   deregistration: {
     label: "机动车注销",
-    next: "交车与回收证明不等于注销完成；需提供注销证明并完成演示核验。",
+    next: "交车与回收证明不等于注销完成；需提供注销证明并完成核验。",
   },
   settlement: {
     label: "回收款",
@@ -126,7 +126,7 @@ export function deriveTracks(input: TrackInput): TrackState[] {
       tone: recTone,
       basis:
         recovery === "handed_over"
-          ? "演示企业交接回执已记录。"
+          ? "企业交接回执已记录。"
           : "尚未记录交接回执。",
       next: TRACK_META.recovery.next,
     },
@@ -138,9 +138,9 @@ export function deriveTracks(input: TrackInput): TrackState[] {
       tone: deregTone,
       basis:
         deregistration === "pending_check"
-          ? "已收到注销证明样例，等待演示核验。"
+          ? "已收到注销证明样例，等待核验。"
           : deregistration === "demo_verified"
-            ? "注销证明已通过演示核验事件。"
+            ? "注销证明已通过核验事件。"
             : "缺少可核对的注销结果。",
       next: TRACK_META.deregistration.next,
     },

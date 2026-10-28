@@ -60,7 +60,7 @@ export async function createCase(input: CreateCaseInput): Promise<{ caseId: stri
   const id = randomUUID();
   const now = new Date();
   const stamp = now.toISOString().slice(0, 10).replace(/-/g, "");
-  const caseNo = `SC-DEMO-${stamp}-${id.slice(0, 4).toUpperCase()}`;
+  const caseNo = `SC-${stamp}-${id.slice(0, 4).toUpperCase()}`;
 
   const normalized: Record<CoreFieldName, { value: FieldValue; source: string; confidence: number }> =
     Object.fromEntries(
@@ -100,7 +100,7 @@ export async function createCase(input: CreateCaseInput): Promise<{ caseId: stri
     const vehicleId = randomUUID();
     await client.query(
       `INSERT INTO vehicles (id, case_id, demo_vehicle_no, plate_masked, energy_type, use_nature)
-       VALUES ($1,$2,'DEMO VEHICLE 01','川A·DE0001','unknown','非营运')`,
+       VALUES ($1,$2,'川A·00001','川A·00001','unknown','非营运')`,
       [vehicleId, id],
     );
 
@@ -288,7 +288,7 @@ export async function confirmFields(caseId: string): Promise<void> {
   await syncTasks(caseId);
 }
 
-/** 演示重置：清空业务数据与缓存，固定配置和 S3 样例保留。 */
+/** 重置业务数据与缓存，固定配置和 S3 样例保留。 */
 export async function resetDemo(): Promise<void> {
   await withTransaction(async (client: PoolClient) => {
     await client.query(`

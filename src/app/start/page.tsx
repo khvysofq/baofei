@@ -95,7 +95,7 @@ export default function StartPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="hazard mb-5" aria-hidden />
-      <p className="label text-rust">四川 · 演示模式</p>
+      <p className="label text-rust">四川 · 线上办理</p>
       <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-5xl">
         帮你理清在四川
         <br className="sm:hidden" />
@@ -103,13 +103,13 @@ export default function StartPage() {
       </h1>
       <p className="mt-3 max-w-xl text-base text-dim">
         用一句话说明车在哪里、登记在哪里、现在能不能开。系统会整理成个人办理计划，
-        再逐步核对材料、比较费用和安排模拟预约。
+        再逐步核对材料、比较费用和安排预约。
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Tag tone="acid">确定性规则演示</Tag>
-        <Tag>不采集真实证件</Tag>
-        <Tag>不接外部接口</Tag>
+        <Tag tone="acid">自动整理信息</Tag>
+        <Tag>材料线上核对</Tag>
+        <Tag>进度可查</Tag>
       </div>
 
       <Panel className="mt-6" strong>
@@ -163,7 +163,7 @@ export default function StartPage() {
 
       <section className="mt-8">
         <SectionTitle
-          aside={<span className="tag text-rust">成都演示案例</span>}
+          aside={<span className="tag text-rust">常见情况</span>}
         >
           直接选择情况
         </SectionTitle>
@@ -215,7 +215,7 @@ export default function StartPage() {
       )}
 
       <p className="mono mt-8 text-[11px] leading-relaxed text-dim">
-        本页为演示：解析结果来自固定规则，不是官方查询。企业、报价、时段与凭证均为虚构配置。
+        解析结果由规则整理生成，最终以受理渠道核验为准。
       </p>
     </div>
   );

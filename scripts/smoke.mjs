@@ -1,4 +1,4 @@
-// 首页 + 7 个演示页面 + /api/health 冒烟。若 10802 未启动，会临时拉起 next dev，检查后关掉。
+// 首页 + 7 个业务页面 + /api/health 冒烟。若 10802 未启动，会临时拉起 next dev，检查后关掉。
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -8,16 +8,20 @@ const base = process.env.SMOKE_BASE_URL || "http://127.0.0.1:10802";
 const PORT = new URL(base).port || "10802";
 
 const ROUTES = [
-  ["/start", "演示模式"],
-  ["/plan", "演示模式"],
-  ["/documents", "演示模式"],
-  ["/quotes", "演示模式"],
-  ["/appointment", "演示模式"],
-  ["/case", "演示模式"],
-  ["/subsidy", "演示模式"],
+  ["/start", "报废助手"],
+  ["/plan", "报废助手"],
+  ["/documents", "报废助手"],
+  ["/quotes", "报废助手"],
+  ["/appointment", "报废助手"],
+  ["/case", "报废助手"],
+  ["/subsidy", "报废助手"],
 ];
 
 const FORBIDDEN = [
+  "演示",
+  "DEMO",
+  "demo-sc",
+  "演示控制",
   "Hydration failed",
   "Text content does not match server-rendered HTML",
   "Minified React error",

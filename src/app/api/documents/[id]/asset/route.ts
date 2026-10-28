@@ -23,24 +23,24 @@ export async function GET(
       );
       const resolved = rows[0]?.sample_id ? String(rows[0].sample_id) : null;
       if (!resolved) {
-        return fail(new Error("未找到可用的演示资料"), 404);
+        return fail(new Error("未找到可用的证件样例"), 404);
       }
       sampleId = resolved;
     } catch {
-      return fail(new Error("未找到可用的演示资料"), 404);
+      return fail(new Error("未找到可用的证件样例"), 404);
     }
   }
 
   if (!isSampleId(sampleId) || !(SAMPLE_IDS as readonly string[]).includes(sampleId)) {
-    return fail(new Error("未找到可用的演示资料"), 404);
+    return fail(new Error("未找到可用的证件样例"), 404);
   }
 
   try {
     const object = await getSampleAsset(sampleId);
-    if (!object.Body) return fail(new Error("演示资料暂不可用"), 502);
+    if (!object.Body) return fail(new Error("证件样例暂不可用"), 502);
     const stream = object.Body.transformToWebStream();
     return new Response(stream, { headers: CACHE_HEADERS });
   } catch {
-    return fail(new Error("演示资料暂不可用，请稍后重试。"), 502);
+    return fail(new Error("证件样例暂不可用，请稍后重试。"), 502);
   }
 }

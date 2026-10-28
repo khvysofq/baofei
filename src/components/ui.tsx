@@ -221,7 +221,7 @@ export function EmptyCase({ message }: { message?: string }) {
       <p className="label">尚未开始</p>
       <h1 className="mt-2 text-2xl font-black tracking-tight">先描述车辆情况</h1>
       <p className="mt-2 text-base text-dim">
-        {message ?? "直接打开此页时还没有案件。回到开始页描述情况，或选择一个成都演示案例。"}
+        {message ?? "直接打开此页时还没有案件。回到开始页描述情况，或选择一个常见情况。"}
       </p>
       <Link href="/start" className="btn-primary mt-5 inline-flex">
         去开始页
@@ -250,12 +250,4 @@ export function FieldValueText({ value }: { value: unknown }) {
   if (value === "complete") return <span>行驶证与登记证都在</span>;
   if (value === "missing_registration") return <span>登记证（绿本）暂时找不到</span>;
   return <span>{String(value)}</span>;
-}
-
-export function DemoDisclaimer() {
-  return (
-    <p className="mono text-[11px] leading-relaxed text-dim">
-      演示数据不产生真实法律效力。金额、时段、凭证、企业资质均为演示配置，未接入真实政务或企业接口。
-    </p>
-  );
 }

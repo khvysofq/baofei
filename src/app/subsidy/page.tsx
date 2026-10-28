@@ -149,7 +149,7 @@ export default function SubsidyPage() {
       <div className="mt-3 flex flex-wrap gap-2">
         <Tag tone="warn">资格待核实</Tag>
         <Tag>政策年度 {view.policyYear}</Tag>
-        <Tag>规则版本 demo-sc-v1.1</Tag>
+        <Tag>规则版本 V1.1</Tag>
         <Tag tone="acid">核对日期 2026-10-28</Tag>
       </div>
 
@@ -314,7 +314,7 @@ export default function SubsidyPage() {
             </div>
 
             <fieldset className="mt-4">
-              <legend className="label mb-2">已有材料类别（演示）</legend>
+              <legend className="label mb-2">已有材料类别</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {view.materials.map((material) => (
                   <label

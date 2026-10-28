@@ -3,10 +3,10 @@ import { HeroTicker } from "./hero-ticker";
 import { VehicleRig } from "./vehicle-rig";
 
 const FACTS = [
-  "演示数据",
-  "不采集真实证件",
-  "不接政务/企业接口",
-  "四川·成都 示例",
+  "四川地区",
+  "线上办理",
+  "进度可查",
+  "凭证留档",
 ];
 
 export function Hero() {
@@ -35,13 +35,13 @@ export function Hero() {
 
           <div className="mt-10 max-w-[36rem] lg:mt-14">
             <p className="text-base leading-relaxed text-dim sm:text-lg">
-              用一段日常描述开始，系统整理出你的办理计划、要准备的材料、两家演示报价，
+              用一段日常描述开始，系统整理出你的办理计划、要准备的材料、两份合作方报价，
               以及每个阶段该看哪张凭证。钱怎么算、什么时候才算办完，一次说清。
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link href="/start" className="btn-primary w-full text-base sm:w-auto">
-                开始办理演示
+                开始办理
               </Link>
               <a href="#how" className="btn-secondary lift w-full text-sm sm:w-auto">
                 看看怎么用 ↓

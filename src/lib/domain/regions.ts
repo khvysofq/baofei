@@ -1,6 +1,6 @@
 import type { RegionValue } from "@/lib/types";
 
-/** 四川省 21 个市（州）的演示配置。 */
+/** 四川省 21 个市（州）的地区配置。 */
 export const SICHUAN_CITIES = [
   "成都",
   "自贡",
@@ -36,7 +36,7 @@ export const CITY_ALIASES: Record<string, string> = {
   凉山彝族自治州: "凉山",
 };
 
-/** 省级行政区（演示用，含直辖市）。 */
+/** 省级行政区（地区数据，含直辖市）。 */
 export const PROVINCES = [
   "四川",
   "重庆",

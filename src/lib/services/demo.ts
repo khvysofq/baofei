@@ -17,13 +17,13 @@ import { resetDemo } from "@/lib/services/cases";
 import { SLOTS, defaultLocation } from "@/lib/services/appointments";
 
 export const DEMO_STAGES = [
-  { id: "D1", label: "D1 已预约", description: "本地演示预约回执；不推进交接、注销或收款。" },
-  { id: "D2", label: "D2 已交接", description: "演示企业交接记录；不推进注销或补贴。" },
+  { id: "D1", label: "D1 已预约", description: "预约回执；不推进交接、注销或收款。" },
+  { id: "D2", label: "D2 已交接", description: "企业交接记录；不推进注销或补贴。" },
   { id: "D3", label: "D3 回收证明已提供", description: "回收证明样例待核验；不推进注销或到账。" },
-  { id: "D4", label: "D4 回收证明演示核验完成", description: "仅核验回收证明；注销与到账保持不变。" },
+  { id: "D4", label: "D4 回收证明核验完成", description: "仅核验回收证明；注销与到账保持不变。" },
   { id: "D5", label: "D5 注销证明已提供", description: "注销证明待核验；不完成注销、不付款。" },
-  { id: "D6", label: "D6 注销演示核验完成", description: "仅推进注销；回收款仍需确认到账。" },
-  { id: "D7", label: "D7 回收款已确认到账", description: "演示用户确认事件；不推进补贴审核。" },
+  { id: "D6", label: "D6 注销核验完成", description: "仅推进注销；回收款仍需确认到账。" },
+  { id: "D7", label: "D7 回收款已确认到账", description: "用户确认事件；不推进补贴审核。" },
 ] as const;
 
 export type DemoStageId = (typeof DEMO_STAGES)[number]["id"];
@@ -65,7 +65,7 @@ async function ensureAppointment(client: PoolClient, caseId: string): Promise<vo
   const quote =
     state.activeQuotes.find((q) => q.providerId === state.case.selectedQuoteProvider) ??
     state.activeQuotes[0];
-  if (!quote) throw new Error("没有可用演示报价，无法生成预约回执");
+  if (!quote) throw new Error("没有可用报价，无法生成预约回执");
   if (state.case.selectedQuoteProvider !== quote.providerId) {
     await client.query(
       `UPDATE cases SET selected_quote_provider = $2, selected_quote_version = $3,
@@ -81,22 +81,22 @@ async function ensureAppointment(client: PoolClient, caseId: string): Promise<vo
   }
   const fields = await loadFields(caseId, client);
   const drivableField = fieldValue(fields, "drivable");
-  const location = defaultLocation(fields) || "成都·演示停车点";
+  const location = defaultLocation(fields) || "成都·车辆停放点";
   const summary = {
     providerName: quote.providerName,
-    slot: "演示时段 A 上午",
+    slot: "上午 09:00–12:00",
     location,
     net: formatYuan(quote.netFen),
-    note: "演示控制注入的预约回执；资料不会实际发送。",
+    note: "内部调试注入的预约回执。",
   };
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const appointmentNo = `DEMO-APT-${stamp}-${randomUUID().slice(0, 4).toUpperCase()}`;
+  const appointmentNo = `SC-APT-${stamp}-${randomUUID().slice(0, 4).toUpperCase()}`;
   await client.query(
     `INSERT INTO appointments
       (id, case_id, quote_id, quote_version, profile_version, materials_version,
        slot_id, location, handover_person, drivable, summary, status,
        appointment_no, idempotency_key)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'演示车主',$9,$10,'booked',$11,$12)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'车主本人',$9,$10,'booked',$11,$12)`,
     [
       randomUUID(),
       caseId,
@@ -124,7 +124,7 @@ export async function injectDemoStage(
   caseId: string,
   stage: DemoStageId,
 ): Promise<{ applied: boolean; message: string }> {
-  if (!(stage in STAGE_EVENT)) throw new Error("未知演示阶段");
+  if (!(stage in STAGE_EVENT)) throw new Error("未知调试阶段");
 
   const already = await eventExists(caseId, STAGE_EVENT[stage]);
   if (already) {
@@ -154,7 +154,7 @@ export async function injectDemoStage(
           vehicleId,
           "HANDOVER_RECEIPT",
           "provided",
-          "演示企业交接回执；仅证明车辆已交接，不代表注销完成。",
+          "企业交接回执；仅证明车辆已交接，不代表注销完成。",
         );
         break;
       }
@@ -165,7 +165,7 @@ export async function injectDemoStage(
           vehicleId,
           "RECOVERY_CERTIFICATE",
           "provided",
-          "演示回收证明样例，等待核验；不推进注销或收款。",
+          "回收证明样例，等待核验；不推进注销或收款。",
         );
         break;
       }
@@ -179,7 +179,7 @@ export async function injectDemoStage(
           vehicleId,
           "RECOVERY_CERTIFICATE",
           "demo_verified",
-          "演示核验事件：回收证明信息与本案演示车辆匹配。",
+          "核验事件：回收证明信息与本案车辆匹配。",
         );
         break;
       }
@@ -190,7 +190,7 @@ export async function injectDemoStage(
           vehicleId,
           "DEREGISTRATION_CERTIFICATE",
           "provided",
-          "演示注销证明样例，已提供待核验；交车与回收证明不等于注销完成。",
+          "注销证明样例，已提供待核验；交车与回收证明不等于注销完成。",
         );
         break;
       }
@@ -204,7 +204,7 @@ export async function injectDemoStage(
           vehicleId,
           "DEREGISTRATION_CERTIFICATE",
           "demo_verified",
-          "演示核验事件：注销证明与本案演示车辆匹配。回收款仍需确认到账。",
+          "核验事件：注销证明与本案车辆匹配。回收款仍需确认到账。",
         );
         break;
       }
@@ -212,7 +212,7 @@ export async function injectDemoStage(
         await appendEvent(client, caseId, {
           type: "payment_confirmed",
           payload: {
-            note: "演示控制注入的到账确认；仍保持演示身份，不代表真实到账。",
+            note: "内部调试注入的到账确认；不代表真实到账。",
             demo: true,
           },
           source: "demo_controller",
@@ -229,7 +229,7 @@ export async function injectDemoStage(
       demo: true,
     });
     await client.query("UPDATE cases SET updated_at = now() WHERE id = $1", [caseId]);
-    return `${stage} 已注入（演示控制）。`;
+    return `${stage} 已注入（内部调试）。`;
   });
 
   await syncTasks(caseId);
@@ -244,7 +244,7 @@ export async function recordPaymentNotice(caseId: string): Promise<void> {
     await appendEvent(client, caseId, {
       type: "payment_notice",
       payload: {
-        note: "演示企业反馈已付款；等待车主确认到账。",
+        note: "企业反馈已付款；等待车主确认到账。",
         demo: true,
       },
       source: "demo_controller",
@@ -262,7 +262,7 @@ export async function confirmPayment(caseId: string): Promise<void> {
     if (!caseRecord.handedOverAt) throw new Error("车辆尚未交接，不能确认到账。");
     await appendEvent(client, caseId, {
       type: "payment_confirmed",
-      payload: { note: "车主本人确认已收到回收款（演示）。", demo: true },
+      payload: { note: "车主本人确认已收到回收款。", demo: true },
       source: "user",
       demo: true,
     });

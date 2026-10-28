@@ -6,12 +6,12 @@ import { appendEvent } from "@/lib/services/events";
 import { syncTasks } from "@/lib/services/plan";
 
 export const SUBSIDY_MATERIALS = [
-  { id: "id_card", label: "身份证明（演示）" },
-  { id: "invoice", label: "新车发票（演示）" },
-  { id: "new_registration", label: "新车登记证（演示）" },
-  { id: "old_car_recycle", label: "旧车回收证明（演示）" },
-  { id: "old_car_deregistration", label: "旧车注销证明（演示）" },
-  { id: "bank_account", label: "本人收款账户说明（演示）" },
+  { id: "id_card", label: "身份证明" },
+  { id: "invoice", label: "新车发票" },
+  { id: "new_registration", label: "新车登记证" },
+  { id: "old_car_recycle", label: "旧车回收证明" },
+  { id: "old_car_deregistration", label: "旧车注销证明" },
+  { id: "bank_account", label: "本人收款账户说明" },
 ] as const;
 
 export const PURCHASE_STAGES = [
@@ -148,7 +148,7 @@ export async function getSubsidyView(caseId: string): Promise<SubsidyView> {
     policyYear: subsidy?.policyYear ?? 2026,
     acceptingCity: subsidy?.acceptingCity ?? issues.acceptingCity,
     acceptingBasis: invoiceRegion?.city
-      ? "受理市州按新车发票开具市州推导（演示）"
+      ? "受理市州按新车发票开具市州推导"
       : "发票尚未取得，受理市州待确认",
     missing: invoiceRegion || subsidy ? issues.missing : [],
     warnings: issues.warnings,

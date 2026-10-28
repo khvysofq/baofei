@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const caseId = requireString(body, "caseId");
     if (action === "inject") {
       const stage = requireString(body, "stage") as DemoStageId;
-      if (!DEMO_STAGES.some((s) => s.id === stage)) throw new Error("未知演示阶段");
+      if (!DEMO_STAGES.some((s) => s.id === stage)) throw new Error("未知调试阶段");
       return ok(await injectDemoStage(caseId, stage));
     }
     if (action === "payment_notice") {
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     if (action === "export") {
       return ok(await exportDemoRecord(caseId));
     }
-    throw new Error("未知演示操作");
+    throw new Error("未知调试操作");
   } catch (err) {
     return fail(err, 400);
   }
