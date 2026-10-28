@@ -161,7 +161,38 @@ function ShellBody({ children }: { children: React.ReactNode }) {
   );
 }
 
+function LandingStrip() {
+  return (
+    <div className="sticky top-0 z-40 border-b border-line-strong bg-void/95 scanlines">
+      <div className="mx-auto flex h-8 max-w-[1440px] items-center px-4 sm:px-6">
+        <p className="mono truncate text-[10px] tracking-[0.14em] text-warn">
+          DEMO · 演示模式 · 演示数据不产生真实法律效力
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function LandingShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-dvh">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-10 focus:z-[70] focus:bg-acid focus:px-3 focus:py-2 focus:text-void"
+      >
+        跳到主要内容
+      </a>
+      <LandingStrip />
+      {children}
+      <div className="noise-overlay" aria-hidden />
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  // 首页是静态营销页：不接入案件上下文、演示控制抽屉与侧边导航。
+  if (pathname === "/") return <LandingShell>{children}</LandingShell>;
   return (
     <CaseProvider>
       <ShellBody>{children}</ShellBody>

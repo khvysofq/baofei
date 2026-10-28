@@ -154,6 +154,23 @@ textarea {
     );
   }
 
+  .hero-scanbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 1px;
+    opacity: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-rust) 18%,
+      var(--color-rust) 82%,
+      transparent
+    );
+    box-shadow: 0 0 12px 1px var(--color-rust);
+  }
+
   .hazard {
     height: 6px;
     background-image: repeating-linear-gradient(
@@ -208,6 +225,35 @@ textarea {
 @media (prefers-reduced-motion: no-preference) {
   .breathe {
     animation: breathe 2.6s ease-in-out infinite;
+  }
+  /* 首页 hero 扫描线：10s 线性，只在允许动效时运行 */
+  .hero-scanbar {
+    animation: hero-scan 10s linear infinite;
+  }
+  @keyframes hero-scan {
+    0% {
+      top: 0%;
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.75;
+    }
+    88% {
+      opacity: 0.75;
+    }
+    100% {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+  .lift {
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease;
+  }
+  .lift:hover {
+    transform: translateY(-1px);
   }
   @keyframes breathe {
     0%,

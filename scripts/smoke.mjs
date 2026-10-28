@@ -1,4 +1,4 @@
-// 7 个页面 + /api/health 冒烟。若 10802 未启动，会临时拉起 next dev，检查后关掉。
+// 首页 + 7 个演示页面 + /api/health 冒烟。若 10802 未启动，会临时拉起 next dev，检查后关掉。
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -78,6 +78,24 @@ try {
     `${healthOk ? "PASS" : "FAIL"}  /api/health  ${healthRes.status}  db=${health?.data?.database} s3=${health?.data?.storage}`,
   );
   if (!healthOk) failed = true;
+
+  const rootRes = await fetch(`${base}/`, {
+    signal: AbortSignal.timeout(15000),
+  });
+  const rootHtml = await rootRes.text();
+  const rootStatusOk = rootRes.status === 200;
+  const rootMarkerOk = rootHtml.includes("报废一辆车");
+  const rootNoDemoControl = !rootHtml.includes("演示控制");
+  const rootForbidden = FORBIDDEN.filter((word) => rootHtml.includes(word));
+  const rootOk =
+    rootStatusOk &&
+    rootMarkerOk &&
+    rootNoDemoControl &&
+    rootForbidden.length === 0;
+  if (!rootOk) failed = true;
+  console.log(
+    `${rootOk ? "PASS" : "FAIL"}  /  ${rootRes.status}  h1=${rootMarkerOk}  no-demo-control=${rootNoDemoControl}  forbidden=${rootForbidden.join(",") || "none"}`,
+  );
 
   for (const [route, marker] of ROUTES) {
     const res = await fetch(`${base}${route}`, {
