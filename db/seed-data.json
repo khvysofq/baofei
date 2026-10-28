@@ -1,0 +1,204 @@
+{
+  "version": "demo-sc-v1.1",
+  "checkedAt": "2026-10-28",
+  "policyYear": 2026,
+  "sichuanCities": [
+    "成都", "自贡", "攀枝花", "泸州", "德阳", "绵阳", "广元", "遂宁",
+    "内江", "乐山", "南充", "眉山", "宜宾", "广安", "达州", "雅安",
+    "巴中", "资阳", "阿坝", "甘孜", "凉山"
+  ],
+  "cityAliases": {
+    "成都市": "成都",
+    "蓉城": "成都",
+    "阿坝州": "阿坝",
+    "阿坝藏族羌族自治州": "阿坝",
+    "甘孜州": "甘孜",
+    "甘孜藏族自治州": "甘孜",
+    "凉山州": "凉山",
+    "凉山彝族自治州": "凉山"
+  },
+  "provinces": [
+    "四川", "重庆", "北京", "上海", "天津", "河北", "山西", "内蒙古",
+    "辽宁", "吉林", "黑龙江", "江苏", "浙江", "安徽", "福建", "江西",
+    "山东", "河南", "湖北", "湖南", "广东", "广西", "海南", "贵州",
+    "云南", "西藏", "陕西", "甘肃", "青海", "宁夏", "新疆"
+  ],
+  "scenarios": [
+    {
+      "id": "S1",
+      "name": "S1 常规报废",
+      "intakeText": "车现在在成都，登记也是成都，本人办理，车子开不动了，行驶证和登记证都在，只想报废，不买新车。",
+      "payload": {
+        "vehicleLocation": { "province": "四川", "city": "成都" },
+        "registrationLocation": { "province": "四川", "city": "成都" },
+        "ownerRelation": "self",
+        "drivable": false,
+        "intent": "scrap",
+        "documentsStatus": "complete"
+      }
+    },
+    {
+      "id": "S2",
+      "name": "S2 登记证缺失",
+      "intakeText": "车在成都，登记在成都，本人办理，开不动了，行驶证还在，但是登记证找不到了，只想报废，不买新车。",
+      "payload": {
+        "vehicleLocation": { "province": "四川", "city": "成都" },
+        "registrationLocation": { "province": "四川", "city": "成都" },
+        "ownerRelation": "self",
+        "drivable": false,
+        "intent": "scrap",
+        "documentsStatus": "missing_registration"
+      }
+    },
+    {
+      "id": "S3",
+      "name": "S3 报废并换新",
+      "intakeText": "车在成都，登记在成都，本人办理，开不动了，证件齐全，准备报废后买辆新车，新车票证地区还没定。",
+      "payload": {
+        "vehicleLocation": { "province": "四川", "city": "成都" },
+        "registrationLocation": { "province": "四川", "city": "成都" },
+        "ownerRelation": "self",
+        "drivable": false,
+        "intent": "replace",
+        "documentsStatus": "complete"
+      }
+    }
+  ],
+  "samples": [
+    {
+      "id": "DOC_CLEAR",
+      "label": "演示资料 1",
+      "docType": "REGISTRATION_CERT",
+      "quality": "clear",
+      "assetKey": "demo-sc-v1.1/samples/DOC_CLEAR.svg",
+      "fields": {
+        "plate": "川A·DE0001",
+        "vehicleNo": "DEMO VEHICLE 01",
+        "owner": "演示车主",
+        "regDate": "2014-03-18",
+        "vin": "LDEMO00000000001",
+        "useNature": "非营运"
+      },
+      "originalFields": {},
+      "issues": []
+    },
+    {
+      "id": "DOC_BLUR",
+      "label": "演示资料 2",
+      "docType": "REGISTRATION_CERT",
+      "quality": "blur",
+      "assetKey": "demo-sc-v1.1/samples/DOC_BLUR.svg",
+      "fields": {
+        "plate": "川A·DE0001",
+        "vehicleNo": "DEMO VEHICLE 01",
+        "owner": "演示车主",
+        "regDate": "2014-03-18",
+        "vin": "LDEMO00000000001",
+        "useNature": "非营运"
+      },
+      "originalFields": {},
+      "issues": [
+        {
+          "kind": "blur",
+          "region": "登记日期与车辆识别代号区域",
+          "message": "图像局部模糊：登记日期与车辆识别代号不可读，其他字段可辨认。"
+        }
+      ]
+    },
+    {
+      "id": "DOC_MISMATCH",
+      "label": "演示资料 3",
+      "docType": "REGISTRATION_CERT",
+      "quality": "mismatch",
+      "assetKey": "demo-sc-v1.1/samples/DOC_MISMATCH.svg",
+      "fields": {
+        "plate": "川A·DE0001",
+        "vehicleNo": "DEMO VEHICLE 01",
+        "owner": "演示车主",
+        "regDate": "2014-08-18",
+        "vin": "LDEMO00000000001",
+        "useNature": "非营运"
+      },
+      "originalFields": {
+        "regDate": "2014-03-18"
+      },
+      "issues": [
+        {
+          "kind": "mismatch",
+          "field": "regDate",
+          "fieldLabel": "登记日期",
+          "region": "登记证书第 3 页 · 登记日期栏",
+          "original": "2014-03-18",
+          "extracted": "2014-08-18",
+          "message": "原件登记日期与提取值不一致，请核对后选择采用哪一项。"
+        }
+      ]
+    }
+  ],
+  "quoteTemplates": [
+    {
+      "providerId": "DEMO_PROVIDER_A",
+      "version": 1,
+      "name": "演示回收方 A",
+      "grossFen": 120000,
+      "towFen": 20000,
+      "serviceFen": 0,
+      "conditions": {
+        "area": "四川·成都（演示）",
+        "tow": "成都核心演示区域含拖运",
+        "note": "演示报价，仅用于比较交互，不代表真实行情。"
+      }
+    },
+    {
+      "providerId": "DEMO_PROVIDER_B",
+      "version": 1,
+      "name": "演示回收方 B",
+      "grossFen": 110000,
+      "towFen": 0,
+      "serviceFen": 5000,
+      "conditions": {
+        "area": "四川·成都（演示）",
+        "tow": "演示免费拖运，含基础服务费",
+        "note": "演示报价，仅用于比较交互，不代表真实行情。"
+      }
+    }
+  ],
+  "policies": [
+    {
+      "region": "全国",
+      "scope": "national",
+      "sourceIds": ["S1", "S2", "S3", "S4", "S7", "S8", "S9"],
+      "effectiveFrom": "2026-01-01",
+      "effectiveTo": null,
+      "checkedAt": "2026-10-28",
+      "version": "demo-sc-v1.1",
+      "status": "verified",
+      "notes": "报废机动车回收、注销登记与 2026 年汽车以旧换新的国家规则；具体受理以官方当期公告为准。",
+      "aliases": []
+    },
+    {
+      "region": "四川",
+      "scope": "province",
+      "sourceIds": ["S5", "S6"],
+      "effectiveFrom": "2026-01-01",
+      "effectiveTo": null,
+      "checkedAt": "2026-10-28",
+      "version": "demo-sc-v1.1",
+      "status": "verified",
+      "notes": "四川省报废机动车回收管理实施办法（试行）与 2026 年汽车以旧换新补贴实施细则。",
+      "aliases": []
+    },
+    {
+      "region": "成都",
+      "scope": "city",
+      "sourceIds": ["S6"],
+      "effectiveFrom": "2025-01-01",
+      "effectiveTo": null,
+      "checkedAt": "2026-10-28",
+      "version": "demo-sc-v1.1",
+      "status": "reference",
+      "notes": "成都为演示示例城市；省级依据可参考，市级具体受理材料与停车点仍需向受理渠道核对。",
+      "aliases": ["成都市", "蓉城"]
+    }
+  ]
+}
