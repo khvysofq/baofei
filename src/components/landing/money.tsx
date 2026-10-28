@@ -30,7 +30,7 @@ export function MoneySection() {
       aria-labelledby="money-title"
       className="scroll-mt-32 border-b border-line"
     >
-      <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:py-28">
+      <div className="mx-auto max-w-[1440px] px-4 py-24 sm:px-6 lg:py-32">
         <SectionHeading
           index="03"
           eyebrow="费用"
@@ -41,7 +41,7 @@ export function MoneySection() {
 
         <div className="mt-12 grid gap-5 lg:grid-cols-2">
           {QUOTES.map((quote) => (
-            <article key={quote.name} className="panel p-6 sm:p-8">
+            <article key={quote.name} className="panel p-7 sm:p-10">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="mono text-[11px] uppercase tracking-[0.18em] text-dim">
@@ -72,7 +72,7 @@ export function MoneySection() {
 
               <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
                 <p className="label">预计实收</p>
-                <p className="mono tabular text-4xl font-black leading-none text-rust sm:text-5xl">
+                <p className="mono tabular text-5xl font-black leading-none text-rust sm:text-6xl">
                   {quote.net}
                 </p>
               </div>

@@ -41,7 +41,7 @@ export function HowItWorks() {
       aria-labelledby="how-title"
       className="scroll-mt-32 border-b border-line"
     >
-      <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:py-28">
+      <div className="mx-auto max-w-[1440px] px-4 py-24 sm:px-6 lg:py-32">
         <SectionHeading
           index="02"
           eyebrow="流程"
@@ -49,7 +49,7 @@ export function HowItWorks() {
           title="一次办理，六步走完"
         />
 
-        <ol className="mt-14 grid gap-8 lg:grid-cols-6 lg:gap-4">
+        <ol className="mt-16 grid gap-10 lg:grid-cols-6 lg:gap-4">
           {STEPS.map((step, index) => (
             <li key={step.no} className="relative min-w-0 pl-14 lg:pl-0 lg:pt-14">
               {index < STEPS.length - 1 && (
@@ -70,8 +70,8 @@ export function HowItWorks() {
                   aria-hidden
                 />
               )}
-              <h3 className="text-lg font-black tracking-tight">{step.name}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dim">
+              <h3 className="text-xl font-black tracking-tight">{step.name}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-dim sm:text-[15px]">
                 {step.note}
               </p>
             </li>

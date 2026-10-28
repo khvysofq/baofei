@@ -25,26 +25,26 @@ export function Problems() {
       aria-labelledby="problems-title"
       className="scroll-mt-32 border-b border-line"
     >
-      <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:py-28">
+      <div className="mx-auto max-w-[1440px] px-4 py-24 sm:px-6 lg:py-32">
         <SectionHeading
           index="01"
           eyebrow="卡点"
           id="problems-title"
           title="三个常见的卡点"
         />
-        <ol className="mt-12 grid gap-px border border-line bg-line lg:grid-cols-3">
+        <ol className="mt-14 grid gap-px border border-line bg-line lg:grid-cols-3">
           {PROBLEMS.map((item) => (
             <li
               key={item.no}
-              className="lift bg-panel p-6 sm:p-8"
+              className="lift bg-panel p-8 sm:p-10"
             >
-              <p className="mono text-4xl font-black tracking-tight text-rust/80">
+              <p className="mono text-5xl font-black tracking-tight text-rust/80">
                 {item.no}
               </p>
-              <h3 className="mt-6 text-xl font-black tracking-tight sm:text-2xl">
+              <h3 className="mt-8 text-2xl font-black tracking-tight sm:text-3xl">
                 {item.title}
               </h3>
-              <p className="mt-3 text-base leading-relaxed text-dim">
+              <p className="mt-4 text-base leading-relaxed text-dim sm:text-lg">
                 {item.body}
               </p>
             </li>

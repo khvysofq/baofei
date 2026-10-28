@@ -64,7 +64,7 @@ export function ScopeSection() {
       aria-labelledby="scope-title"
       className="scroll-mt-32 border-b border-line"
     >
-      <div className="mx-auto max-w-[1440px] px-4 py-20 sm:px-6 lg:py-28">
+      <div className="mx-auto max-w-[1440px] px-4 py-24 sm:px-6 lg:py-32">
         <SectionHeading
           index="04"
           eyebrow="边界"
