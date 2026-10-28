@@ -1,0 +1,15 @@
+services:
+  baofei:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: /srv/apps/baofei/.env
+    ports:
+      - "10802:10802"
+    networks:
+      - shared
+
+networks:
+  shared:
+    external: true
