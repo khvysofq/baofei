@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeroTicker } from "./hero-ticker";
 import { VehicleRig } from "./vehicle-rig";
 
 const FACTS = [
@@ -48,8 +49,9 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative mt-12 w-full max-w-[520px] lg:absolute lg:bottom-24 lg:right-6 lg:mt-0 lg:w-[520px]">
+        <div className="relative mt-12 w-full max-w-[520px] lg:absolute lg:bottom-20 lg:right-6 lg:mt-0 lg:w-[520px]">
           <VehicleRig />
+          <HeroTicker />
         </div>
 
         <ul className="relative mt-10 grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
