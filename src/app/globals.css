@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-void: #08090a;
-  --color-panel: #101214;
-  --color-raise: #171a1c;
-  --color-line: #2a2e31;
-  --color-line-strong: #3c4247;
-  --color-text: #e6e3da;
-  --color-dim: #9ba1a3;
-  --color-rust: #ff6a1f;
-  --color-acid: #c9f24d;
-  --color-warn: #f2b33d;
-  --color-danger: #e5484d;
+  /* 浅色「服务感」色板：米白底 + 墨绿主色 + 铜橙强调 */
+  --color-void: #f6f7f5;
+  --color-panel: #ffffff;
+  --color-raise: #f1f3f1;
+  --color-line: #e3e6e2;
+  --color-line-strong: #cbd2cd;
+  --color-text: #14181a;
+  --color-dim: #5c6663;
+  --color-brand: #0f6b57;
+  --color-brand-soft: #e8f2ee;
+  --color-rust: #c2410c;
+  --color-acid: #0f766e;
+  --color-warn: #b45309;
+  --color-danger: #b42318;
 
   --font-sans:
     var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -20,10 +23,14 @@
   --font-mono:
     var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas,
     "Liberation Mono", monospace;
+
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgba(20, 24, 26, 0.04), 0 12px 32px -20px rgba(20, 24, 26, 0.35);
+  --shadow-pop: 0 2px 4px rgba(20, 24, 26, 0.05), 0 18px 48px -24px rgba(20, 24, 26, 0.4);
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html {
@@ -33,7 +40,7 @@ html {
 
 body {
   background:
-    radial-gradient(120% 70% at 50% -20%, rgba(255, 106, 31, 0.07), transparent 60%),
+    radial-gradient(120% 55% at 50% -12%, rgba(15, 107, 87, 0.07), transparent 62%),
     var(--color-void);
   color: var(--color-text);
   font-family: var(--font-sans);
@@ -43,12 +50,12 @@ body {
 }
 
 ::selection {
-  background: var(--color-rust);
-  color: var(--color-void);
+  background: var(--color-brand);
+  color: #ffffff;
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-acid);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
@@ -64,19 +71,21 @@ textarea {
   .panel {
     background: var(--color-panel);
     border: 1px solid var(--color-line);
-    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
   }
 
   .panel-strong {
     background: var(--color-panel);
     border: 1px solid var(--color-line-strong);
-    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-pop);
   }
 
   .label {
     font-family: var(--font-mono);
     font-size: 11px;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-dim);
   }
@@ -92,21 +101,25 @@ textarea {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    background: var(--color-rust);
-    color: #120a05;
-    font-weight: 800;
-    padding: 0.75rem 1.25rem;
-    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-    transition: filter 120ms ease;
+    background: var(--color-brand);
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.75rem 1.35rem;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(15, 107, 87, 0.24), 0 10px 24px -16px rgba(15, 107, 87, 0.8);
+    transition: background-color 140ms ease, transform 140ms ease;
   }
   .btn-primary:hover {
-    filter: brightness(1.08);
+    background: #0b5848;
+  }
+  .btn-primary:active {
+    transform: translateY(1px);
   }
   .btn-primary:disabled {
     background: var(--color-line-strong);
-    color: var(--color-dim);
+    color: #ffffff;
+    box-shadow: none;
     cursor: not-allowed;
-    filter: none;
   }
 
   .btn-secondary {
@@ -116,80 +129,71 @@ textarea {
     justify-content: center;
     gap: 0.5rem;
     border: 1px solid var(--color-line-strong);
-    background: var(--color-raise);
+    background: var(--color-panel);
     color: var(--color-text);
-    padding: 0.6rem 1rem;
-    transition: border-color 120ms ease, background 120ms ease;
+    padding: 0.6rem 1.1rem;
+    border-radius: 10px;
+    transition: border-color 140ms ease, color 140ms ease, background-color 140ms ease;
   }
   .btn-secondary:hover {
-    border-color: var(--color-rust);
-    background: #1d2022;
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+    background: var(--color-brand-soft);
   }
   .btn-secondary:disabled {
     color: var(--color-dim);
     cursor: not-allowed;
     border-color: var(--color-line);
+    background: var(--color-raise);
   }
 
   .input {
     width: 100%;
     min-height: 44px;
-    background: var(--color-raise);
+    background: var(--color-panel);
     border: 1px solid var(--color-line-strong);
     color: var(--color-text);
-    padding: 0.6rem 0.75rem;
-    border-radius: 2px;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+  }
+  .input::placeholder {
+    color: #8a948f;
   }
   .input:focus-visible {
-    border-color: var(--color-acid);
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px rgba(15, 107, 87, 0.12);
+    outline: none;
   }
 
+  /* 浅色下不用扫描线与噪点，保留类名避免改动页面 */
   .scanlines {
-    background-image: repeating-linear-gradient(
-      0deg,
-      rgba(230, 227, 218, 0.035) 0,
-      rgba(230, 227, 218, 0.035) 1px,
-      transparent 1px,
-      transparent 3px
-    );
+    background-image: none;
   }
 
   .hero-scanbar {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    height: 1px;
-    opacity: 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--color-rust) 18%,
-      var(--color-rust) 82%,
-      transparent
-    );
-    box-shadow: 0 0 12px 1px var(--color-rust);
+    display: none;
   }
 
   .hazard {
-    height: 6px;
+    height: 4px;
     background-image: repeating-linear-gradient(
       45deg,
       var(--color-rust) 0,
-      var(--color-rust) 8px,
-      var(--color-void) 8px,
-      var(--color-void) 16px
+      var(--color-rust) 10px,
+      transparent 10px,
+      transparent 20px
     );
-    opacity: 0.85;
+    opacity: 0.22;
   }
 
   .lamp {
     display: inline-block;
-    width: 6px;
-    height: 6px;
-    flex: 0 0 6px;
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
     background: currentColor;
-    box-shadow: 0 0 8px currentColor;
+    border-radius: 999px;
   }
 
   .tag {
@@ -198,62 +202,41 @@ textarea {
     gap: 0.35rem;
     max-width: 100%;
     white-space: normal;
-    border: 1px solid var(--color-line-strong);
-    padding: 0.1rem 0.45rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-raise);
+    border-radius: 6px;
+    padding: 0.12rem 0.5rem;
     font-family: var(--font-mono);
     font-size: 11px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.06em;
     color: var(--color-dim);
   }
 
   .link-rust {
-    color: var(--color-rust);
+    color: var(--color-brand);
     text-decoration: underline;
     text-underline-offset: 3px;
   }
 }
 
 .noise-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  display: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .breathe {
     animation: breathe 2.6s ease-in-out infinite;
   }
-  /* 首页 hero 扫描线：10s 线性，只在允许动效时运行 */
-  .hero-scanbar {
-    animation: hero-scan 10s linear infinite;
-  }
-  @keyframes hero-scan {
-    0% {
-      top: 0%;
-      opacity: 0;
-    }
-    12% {
-      opacity: 0.75;
-    }
-    88% {
-      opacity: 0.75;
-    }
-    100% {
-      top: 100%;
-      opacity: 0;
-    }
-  }
   .lift {
     transition:
       transform 160ms ease,
+      box-shadow 160ms ease,
       border-color 160ms ease,
       background-color 160ms ease;
   }
   .lift:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-pop);
   }
   @keyframes breathe {
     0%,

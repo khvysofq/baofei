@@ -28,7 +28,7 @@ export function HeroTicker() {
   const step = STEPS[index];
 
   return (
-    <div className="mt-4 border border-line bg-panel/85 px-4 py-3">
+    <div className="panel mt-4 px-4 py-3">
       <div className="hidden motion-reduce:block">
         <p className="mono text-[10px] uppercase tracking-[0.18em] text-dim">
           流程 · 六步

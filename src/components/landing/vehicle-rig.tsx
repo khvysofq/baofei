@@ -95,7 +95,7 @@ export function VehicleRig() {
           </g>
 
           {/* 轮组 */}
-          <g className="stroke-line-strong" fill="none" strokeWidth="1.4">
+          <g className="stroke-dim" fill="none" strokeWidth="1.4">
             <circle cx="108" cy="340" r="34" />
             <circle cx="108" cy="340" r="18" />
             <circle cx="108" cy="340" r="5" className="stroke-rust" />

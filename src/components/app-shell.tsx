@@ -49,9 +49,7 @@ function SideNav() {
       <nav aria-label="主要导航" className="mt-8 space-y-1">
         {NAV.map((item) => {
           const active =
-            item.href === "/case"
-              ? pathname === "/case"
-              : pathname === item.href.replace("#help", "");
+            !item.href.includes("#") && pathname === item.href;
           return (
             <Link
               key={item.href}
@@ -59,7 +57,7 @@ function SideNav() {
               aria-current={active ? "page" : undefined}
               className={`flex min-h-[44px] items-center justify-between border-l-2 px-3 text-sm transition-colors ${
                 active
-                  ? "border-rust bg-panel text-text"
+                  ? "border-brand bg-panel text-text"
                   : "border-transparent text-dim hover:border-line-strong hover:text-text"
               }`}
             >

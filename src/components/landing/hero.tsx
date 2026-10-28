@@ -16,8 +16,9 @@ export function Hero() {
       className="relative min-h-[max(680px,calc(100dvh_-_6rem))] overflow-hidden border-b border-line"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-48 -top-56 h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,rgba(255,106,31,0.18),transparent_64%)] blur-2xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(42,46,49,0.5)_1px,transparent_1px),linear-gradient(to_bottom,rgba(42,46,49,0.5)_1px,transparent_1px)] bg-[length:76px_76px] [mask-image:radial-gradient(72%_62%_at_38%_38%,black,transparent)]" />
+        <div className="absolute -left-48 -top-56 h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,rgba(15,107,87,0.13),transparent_66%)] blur-2xl" />
+        <div className="absolute right-[-10%] top-[10%] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(194,65,12,0.08),transparent_66%)] blur-2xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(20,24,26,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(20,24,26,0.05)_1px,transparent_1px)] bg-[length:76px_76px] [mask-image:radial-gradient(72%_62%_at_38%_38%,black,transparent)]" />
       </div>
 
       <div className="relative mx-auto flex min-h-[max(680px,calc(100dvh_-_6rem))] max-w-[1440px] flex-col px-4 pb-8 pt-10 sm:px-6 lg:pt-14">
