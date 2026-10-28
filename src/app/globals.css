@@ -1,36 +1,244 @@
 @import "tailwindcss";
 
+@theme {
+  --color-void: #08090a;
+  --color-panel: #101214;
+  --color-raise: #171a1c;
+  --color-line: #2a2e31;
+  --color-line-strong: #3c4247;
+  --color-text: #e6e3da;
+  --color-dim: #9ba1a3;
+  --color-rust: #ff6a1f;
+  --color-acid: #c9f24d;
+  --color-warn: #f2b33d;
+  --color-danger: #e5484d;
+
+  --font-sans:
+    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
+    "Source Han Sans SC", sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --hero-glow: rgba(99, 102, 241, 0.16);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --hero-glow: rgba(129, 140, 248, 0.18);
-  }
+  color-scheme: dark;
 }
 
 html {
+  background: var(--color-void);
   scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  /* 中文字体优先用系统内置，避免缺字形/下载字体导致的闪白 */
-  font-family:
-    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
-    "Source Han Sans SC", sans-serif;
+  background:
+    radial-gradient(120% 70% at 50% -20%, rgba(255, 106, 31, 0.07), transparent 60%),
+    var(--color-void);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--color-rust);
+  color: var(--color-void);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-acid);
+  outline-offset: 2px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .panel {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  }
+
+  .panel-strong {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line-strong);
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  }
+
+  .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-dim);
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: var(--color-rust);
+    color: #120a05;
+    font-weight: 800;
+    padding: 0.75rem 1.25rem;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    transition: filter 120ms ease;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08);
+  }
+  .btn-primary:disabled {
+    background: var(--color-line-strong);
+    color: var(--color-dim);
+    cursor: not-allowed;
+    filter: none;
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-raise);
+    color: var(--color-text);
+    padding: 0.6rem 1rem;
+    transition: border-color 120ms ease, background 120ms ease;
+  }
+  .btn-secondary:hover {
+    border-color: var(--color-rust);
+    background: #1d2022;
+  }
+  .btn-secondary:disabled {
+    color: var(--color-dim);
+    cursor: not-allowed;
+    border-color: var(--color-line);
+  }
+
+  .input {
+    width: 100%;
+    min-height: 44px;
+    background: var(--color-raise);
+    border: 1px solid var(--color-line-strong);
+    color: var(--color-text);
+    padding: 0.6rem 0.75rem;
+    border-radius: 2px;
+  }
+  .input:focus-visible {
+    border-color: var(--color-acid);
+  }
+
+  .scanlines {
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgba(230, 227, 218, 0.035) 0,
+      rgba(230, 227, 218, 0.035) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  .hazard {
+    height: 6px;
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-rust) 0,
+      var(--color-rust) 8px,
+      var(--color-void) 8px,
+      var(--color-void) 16px
+    );
+    opacity: 0.85;
+  }
+
+  .lamp {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    white-space: normal;
+    border: 1px solid var(--color-line-strong);
+    padding: 0.1rem 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--color-dim);
+  }
+
+  .link-rust {
+    color: var(--color-rust);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .breathe {
+    animation: breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+  .blink {
+    animation: blink 1.2s steps(2, start) infinite;
+  }
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .breathe,
+  .blink {
+    animation: none !important;
+  }
+}
+
+/* 数字用等宽且对齐 */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
