@@ -168,7 +168,7 @@ export default function StartPage() {
           直接选择情况
         </SectionTitle>
         <p className="mb-3 text-sm text-dim">
-          示例只填入描述框，需要你确认后才生成计划，不会自动创建案件。
+          点选后只填入描述框，需要你确认后才生成计划，不会自动创建案件。
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
           {scenarios.map((scenario) => (
@@ -190,7 +190,7 @@ export default function StartPage() {
           ))}
           {scenarios.length === 0 && (
             <p className="text-sm text-dim">
-              示例暂未加载。仍可在上方直接描述，规则解析不依赖示例。
+              常见情况暂未加载，仍可在上方直接描述，规则解析不依赖它们。
             </p>
           )}
         </div>

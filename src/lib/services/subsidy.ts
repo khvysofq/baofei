@@ -161,7 +161,7 @@ export async function getSubsidyView(caseId: string): Promise<SubsidyView> {
     materials: SUBSIDY_MATERIALS,
     stages: PURCHASE_STAGES,
     sources: ["S4", "S5", "S7"],
-    note: "本版只给出待核实清单，不计算补贴金额，也不给出资格通过结论。回收净额不受补贴状态影响。",
+    note: "本服务只给出待核实清单，不计算补贴金额，也不给出资格通过结论。回收净额不受补贴状态影响。",
   };
 }
 

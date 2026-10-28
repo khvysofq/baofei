@@ -102,7 +102,7 @@ export const TRACK_META: Record<string, { label: string; next: string }> = {
   },
   subsidy: {
     label: "补贴",
-    next: "补贴与回收净额独立，本版只给待核实清单，不计算金额。",
+    next: "补贴与回收净额独立，本服务只给待核实清单，不计算金额。",
   },
 };
 
@@ -166,7 +166,7 @@ export function deriveTracks(input: TrackInput): TrackState[] {
       tone: subsidyTone,
       basis:
         input.intent === "replace"
-          ? "补贴待办与回收净额独立；本版不计算补贴金额。"
+          ? "补贴待办与回收净额独立；本服务不计算补贴金额。"
           : "当前目标为仅报废，补贴待办未参与排序。",
       next: TRACK_META.subsidy.next,
     },

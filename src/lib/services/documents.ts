@@ -22,7 +22,7 @@ export const DOCUMENT_META: Record<DocumentType, { label: string; hint: string }
   },
   AUTHORIZATION: {
     label: "授权与代办核对",
-    hint: "家人协助办理时，核对车主授权与代办材料；本版不采集真实授权书。",
+    hint: "家人协助办理时，核对车主授权与代办材料；本服务不采集真实授权书。",
   },
 };
 

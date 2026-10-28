@@ -143,7 +143,7 @@ export default function SubsidyPage() {
         换新补贴：先核对，不承诺
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-dim">
-        补贴与回收净额完全独立。本版只给出“资格待核实”和缺项清单，不计算补贴金额，也不给出通过结论。
+        补贴与回收净额完全独立。本服务只给出“资格待核实”和缺项清单，不计算补贴金额，也不给出通过结论。
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
