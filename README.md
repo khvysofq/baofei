@@ -34,6 +34,9 @@ pnpm test                       # vitest：domain / rules / 状态机 / 服务�
 node scripts/smoke.mjs          # 7 路由 + /api/health；未启动时会临时拉起 dev
 ```
 
+> ⚠️ `pnpm test` 会连 `.env.local` 的数据库，且 `tests/api.test.ts` 结束时会 `resetAllDemo()`
+> 清空业务表（案件/报价/任务/事件）。跑之前先备份或改用独立测试库。
+
 `smoke.mjs` 默认检查 `http://127.0.0.1:10802`，可用 `SMOKE_BASE_URL` 覆盖。
 
 ## 演示路径

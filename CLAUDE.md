@@ -24,13 +24,19 @@
 pnpm dev --port 10802          # 本地开发
 pnpm build && pnpm start -p 10802   # 生产构建
 pnpm lint
-pnpm test                      # vitest run
+pnpm test                      # vitest run ⚠️ 会清空业务表，见下方警告
 node scripts/db-migrate.mjs    # 幂等迁移，可重复跑
 node scripts/db-seed.mjs       # 重建 demo-sc-v1.1 种子（清空业务表后写入）
 node scripts/smoke.mjs         # 7 个路由冒烟
 ```
 
 端口 10802。3000 端口是别的项目，别碰。
+
+> ⚠️ **`pnpm test` 会清库**：`tests/setup.ts` 加载 `.env.local`（生产库），
+> `tests/api.test.ts` 的 `afterAll` 调 `resetAllDemo()`，会把 cases / quotes / tasks / events
+> 全部清空（配置表 scenario_templates / quote_templates / city_policy_config / document_samples 保留）。
+> 跑之前先备份（`pg_dump`）或让 `.env.local` 指向独立测试库；在生产库上跑完要
+> `node scripts/db-seed.mjs` 或重建演示案件才能继续演示。2026-10-31 已实际踩过一次。
 
 ## 目录
 
@@ -118,6 +124,6 @@ tests/                   vitest 单测（domain 与 rules 必测）
 ## 交付习惯
 
 - 每个工作包一次提交，中文 commit message，说明改了什么、怎么验证的。
-- 改完必跑 `pnpm lint`、`pnpm test`、`pnpm build`；
+- 改完必跑 `pnpm lint`、`pnpm test`、`pnpm build`（**跑测试前先备库或切测试库**，见「常用命令」下方警告）；
 - 不许留 `console.log`、假的 TODO 文案、"即将上线"占位。
 - 无障碍：语义标签、`aria-live` 用于任务变化、表单 label 关联、错误不只靠颜色。
