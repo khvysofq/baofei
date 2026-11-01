@@ -5,6 +5,8 @@ import { explainVinError, queryVin } from "@/lib/vin";
 import type { VinVehicleSpec } from "@/lib/vin/types";
 
 const MAX_BYTES = 10 * 1024 * 1024;
+/** 首页「填入示例 VIN」使用的演示车架号；跳过第三方渠道，保证样例始终可用。 */
+const DEMO_VIN = "LSVAA49J1C2345678";
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/svg+xml"];
 
 function badRequest(error: string, status = 400) {
@@ -37,22 +39,26 @@ export async function POST(request: Request) {
     // 真实 VIN 渠道优先；渠道无结果时明确告知，渠道故障时降级为演示推定并标注原因。
     let spec: VinVehicleSpec | null = null;
     let notice: string | null = null;
-    try {
-      const outcome = await queryVin(vin);
-      spec = outcome.spec;
-    } catch (caught) {
-      const explained = explainVinError(caught);
-      if (!explained.shouldFallbackToDemo) {
-        const status = explained.code === "INVALID_VIN" ? 400 : 404;
-        return NextResponse.json(
-          { ok: false, error: explained.message, code: explained.code },
-          { status },
+    if (vin === DEMO_VIN) {
+      notice = "示例 VIN：使用内置演示车型推算，可直接体验完整报告。";
+    } else {
+      try {
+        const outcome = await queryVin(vin);
+        spec = outcome.spec;
+      } catch (caught) {
+        const explained = explainVinError(caught);
+        if (!explained.shouldFallbackToDemo) {
+          const status = explained.code === "INVALID_VIN" ? 400 : 404;
+          return NextResponse.json(
+            { ok: false, error: explained.message, code: explained.code },
+            { status },
+          );
+        }
+        notice = explained.message;
+        console.warn(
+          `[vin] ${vin} 渠道查询失败，降级演示推定：${explained.code} ${explained.message}`,
         );
       }
-      notice = explained.message;
-      console.warn(
-        `[vin] ${vin} 渠道查询失败，降级演示推定：${explained.code} ${explained.message}`,
-      );
     }
 
     const report = buildValuationReport({

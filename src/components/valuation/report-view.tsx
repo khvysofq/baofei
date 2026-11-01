@@ -297,26 +297,41 @@ export function ReportView({
 
       <div className="mt-4 overflow-hidden rounded-2xl bg-brand text-white">
         <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div>
+          <div className="min-w-0">
             <p className="mono text-[10px] tracking-[0.16em] text-white/70">
               办理推荐联系人
             </p>
             <p className="mt-1 text-xl font-black tracking-tight">何先生</p>
             <p className="mt-1 text-sm text-white/80">报废回收 · 上门验车 · 手续代办</p>
           </div>
-          <div className="flex flex-col gap-2 sm:items-end">
-            <a
-              href="tel:15828996681"
-              className="mono text-2xl font-black tracking-wide hover:underline"
-            >
-              158 2899 6681
-            </a>
-            <a
-              href="tel:15828996681"
-              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-white px-5 text-sm font-bold text-brand transition-colors hover:bg-brand-soft sm:w-auto"
-            >
-              拨打电话
-            </a>
+          <div className="flex flex-wrap items-end gap-4 sm:flex-nowrap sm:items-center sm:gap-6">
+            <div className="flex flex-col gap-2 sm:items-end">
+              <a
+                href="tel:15828996681"
+                className="mono text-xl font-black tracking-wide hover:underline sm:text-2xl"
+              >
+                158 2899 6681
+              </a>
+              <a
+                href="tel:15828996681"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-white px-6 text-sm font-bold text-brand transition-colors hover:bg-brand-soft"
+              >
+                拨打电话
+              </a>
+            </div>
+            <div className="flex shrink-0 flex-col items-center gap-1.5">
+              <div className="rounded-xl bg-white p-1.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/wechat-he.jpg"
+                  alt="何先生微信二维码，扫码添加好友"
+                  width={132}
+                  height={132}
+                  className="h-[104px] w-[104px] rounded-md object-contain sm:h-[132px] sm:w-[132px]"
+                />
+              </div>
+              <p className="text-[10px] font-semibold text-white/80">微信扫码添加</p>
+            </div>
           </div>
         </div>
       </div>
