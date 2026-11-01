@@ -2,16 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReportView } from "@/components/valuation/report-view";
-import type { ValuationReport } from "@/lib/valuation/engine";
+import { isValidVin, type ValuationReport } from "@/lib/valuation/engine";
 
 type Status = "idle" | "analyzing" | "done";
+type Mode = "vin" | "license";
 
-const STEPS = [
-  "读取行驶证照片",
-  "识别车辆类型与排量",
-  "匹配四川回收行情",
-  "生成残值评估报告",
-];
+const EXAMPLE_VIN = "LSVAA49J1C2345678";
+
+const VIN_STEPS = ["校验 VIN 格式", "解析品牌与年款", "匹配四川回收行情", "生成残值评估报告"];
+const PHOTO_STEPS = ["读取行驶证照片", "识别车辆与排量", "匹配四川回收行情", "生成残值评估报告"];
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -19,6 +18,8 @@ function formatSize(bytes: number): string {
 }
 
 export function ValuationApp() {
+  const [mode, setMode] = useState<Mode>("vin");
+  const [vin, setVin] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isSample, setIsSample] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
@@ -27,9 +28,12 @@ export function ValuationApp() {
   const [report, setReport] = useState<ValuationReport | null>(null);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const vinRef = useRef<HTMLInputElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  const vinValid = isValidVin(vin);
+  const steps = mode === "vin" ? VIN_STEPS : PHOTO_STEPS;
 
   useEffect(() => {
     if (!preview) return;
@@ -39,35 +43,40 @@ export function ValuationApp() {
   useEffect(() => {
     if (status !== "analyzing") return;
     const timer = window.setInterval(() => {
-      setStep((current) => Math.min(current + 1, STEPS.length - 1));
+      setStep((current) => Math.min(current + 1, steps.length - 1));
     }, 620);
     return () => window.clearInterval(timer);
-  }, [status]);
+  }, [status, steps.length]);
 
-  const pickFile = useCallback((next: File | null) => {
+  const clearResult = useCallback(() => {
     setError(null);
     setReport(null);
     setStatus("idle");
-    setIsSample(false);
-    if (!next) {
-      setFile(null);
-      return;
-    }
-    if (!next.type.startsWith("image/")) {
-      setError("请上传行驶证照片（JPG / PNG / HEIC）。");
-      return;
-    }
-    if (next.size > 10 * 1024 * 1024) {
-      setError("照片超过 10MB，请压缩后重试。");
-      return;
-    }
-    setFile(next);
   }, []);
 
+  const pickFile = useCallback(
+    (next: File | null) => {
+      clearResult();
+      setIsSample(false);
+      if (!next) {
+        setFile(null);
+        return;
+      }
+      if (!next.type.startsWith("image/")) {
+        setError("请上传行驶证照片（JPG / PNG / HEIC）。");
+        return;
+      }
+      if (next.size > 10 * 1024 * 1024) {
+        setError("照片超过 10MB，请压缩后重试。");
+        return;
+      }
+      setFile(next);
+    },
+    [clearResult],
+  );
+
   const loadSample = useCallback(async () => {
-    setError(null);
-    setStatus("idle");
-    setReport(null);
+    clearResult();
     try {
       const response = await fetch("/sample-driving-license.svg");
       if (!response.ok) throw new Error("sample");
@@ -78,40 +87,70 @@ export function ValuationApp() {
     } catch {
       setError("示例照片加载失败，请手动选择一张照片。");
     }
-  }, []);
+  }, [clearResult]);
 
-  const submit = useCallback(async () => {
-    if (!file || status === "analyzing") return;
-    setStatus("analyzing");
-    setStep(0);
-    setError(null);
-    setReport(null);
+  const runRequest = useCallback(
+    async (makeRequest: () => Promise<Response>) => {
+      if (status === "analyzing") return;
+      setStatus("analyzing");
+      setStep(0);
+      setError(null);
+      setReport(null);
 
-    const startedAt = Date.now();
-    try {
+      const startedAt = Date.now();
+      try {
+        const response = await makeRequest();
+        const payload = (await response.json()) as
+          | { ok: true; report: ValuationReport }
+          | { ok: false; error: string };
+        const wait = Math.max(0, 1600 - (Date.now() - startedAt));
+        if (wait > 0) await new Promise((resolve) => window.setTimeout(resolve, wait));
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.ok ? "评估失败" : payload.error);
+        }
+        setReport(payload.report);
+        setStatus("done");
+        window.setTimeout(() => {
+          reportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
+      } catch (caught) {
+        setStatus("idle");
+        setError(
+          caught instanceof Error && caught.message ? caught.message : "评估失败，请稍后重试。",
+        );
+      }
+    },
+    [status],
+  );
+
+  const submitVin = useCallback(() => {
+    if (!vinValid) {
+      setError("VIN 应为 17 位数字或字母，且不含 I、O、Q。");
+      vinRef.current?.focus();
+      return;
+    }
+    void runRequest(() =>
+      fetch("/api/valuation/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vin }),
+      }),
+    );
+  }, [runRequest, vin, vinValid]);
+
+  const submitPhoto = useCallback(() => {
+    if (!file) {
+      setError("请先选择一张行驶证照片。");
+      return;
+    }
+    void runRequest(() => {
       const body = new FormData();
       body.append("file", file);
       if (isSample) body.append("sample", "1");
-      const response = await fetch("/api/valuation/analyze", { method: "POST", body });
-      const payload = (await response.json()) as
-        | { ok: true; report: ValuationReport }
-        | { ok: false; error: string };
-      const wait = Math.max(0, 1700 - (Date.now() - startedAt));
-      if (wait > 0) await new Promise((resolve) => window.setTimeout(resolve, wait));
-
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.ok ? "评估失败" : payload.error);
-      }
-      setReport(payload.report);
-      setStatus("done");
-      window.setTimeout(() => {
-        reportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 80);
-    } catch (caught) {
-      setStatus("idle");
-      setError(caught instanceof Error && caught.message ? caught.message : "评估失败，请稍后重试。");
-    }
-  }, [file, isSample, status]);
+      return fetch("/api/valuation/analyze", { method: "POST", body });
+    });
+  }, [file, isSample, runRequest]);
 
   const reset = useCallback(() => {
     setFile(null);
@@ -119,8 +158,15 @@ export function ValuationApp() {
     setReport(null);
     setStatus("idle");
     setError(null);
-    inputRef.current?.focus();
-  }, []);
+    if (mode === "vin") vinRef.current?.focus();
+    else inputRef.current?.focus();
+  }, [mode]);
+
+  const switchMode = (next: Mode) => {
+    if (status === "analyzing") return;
+    setMode(next);
+    setError(null);
+  };
 
   return (
     <div className="min-h-dvh">
@@ -138,7 +184,7 @@ export function ValuationApp() {
             </span>
           </a>
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-dim sm:inline">上传行驶证 · 30 秒出报告</span>
+            <span className="hidden text-xs text-dim sm:inline">输入 VIN · 30 秒出报告</span>
             <a href="#upload" className="btn-primary min-h-[40px] px-4 text-sm">
               开始评估
             </a>
@@ -151,28 +197,25 @@ export function ValuationApp() {
           <div>
             <p className="tag border-brand/30 bg-brand-soft text-brand">四川 · 报废残值评估样例</p>
             <h1 className="mt-5 text-4xl font-black leading-[1.12] tracking-tight sm:text-5xl">
-              上传行驶证，
+              输入 VIN，
               <br />
               看清这辆车
               <span className="relative whitespace-nowrap">
                 <span className="relative z-10">报废值多少</span>
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 bottom-1.5 z-0 h-3 bg-rust/15"
-                />
+                <span aria-hidden className="absolute inset-x-0 bottom-1.5 z-0 h-3 bg-rust/15" />
               </span>
               。
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-dim">
-              一张行驶证照片，自动读取车辆类型、排量与车龄，按四川地区回收行情拆解废钢、三元催化、
-              有色金属等残值，扣掉拆解与拖运成本，直接给出可参考的收购区间。
+              手动填写车辆识别代号（VIN），或上传行驶证正面自动识别，30 秒生成残值评估报告：
+              拆解废钢、三元催化、有色金属等残值，扣掉拆解与拖运成本，给出可参考的收购区间。
             </p>
 
             <dl className="mt-8 grid max-w-lg grid-cols-3 gap-3">
               {[
+                ["17 位", "VIN 即可评估"],
                 ["30 秒", "生成报告"],
                 ["6 项", "残值拆解"],
-                ["7 天", "报告有效期"],
               ].map(([value, label]) => (
                 <div key={label} className="rounded-xl border border-line bg-panel px-3 py-2.5">
                   <dt className="mono text-lg font-black tracking-tight">{value}</dt>
@@ -183,9 +226,9 @@ export function ValuationApp() {
 
             <ul className="mt-8 space-y-2.5 text-sm">
               {[
-                "只需行驶证正本照片，不用先填一堆表单",
+                "手动输入 VIN 就能评估，不用先拍证件",
+                "上传行驶证正面，自动补全号牌与登记日期",
                 "报告写清每一项残值怎么算，不藏扣费",
-                "现场验车与称重前，先知道大致区间",
               ].map((text) => (
                 <li key={text} className="flex items-start gap-2.5">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
@@ -197,82 +240,163 @@ export function ValuationApp() {
 
           <div id="upload" className="scroll-mt-24">
             <div className="panel-strong p-4 sm:p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base font-black">上传行驶证照片</h2>
-                <span className="mono text-[10px] tracking-[0.1em] text-dim">JPG · PNG · HEIC</span>
+              <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-raise p-1" role="tablist" aria-label="评估方式">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === "vin"}
+                  onClick={() => switchMode("vin")}
+                  className={`min-h-[40px] rounded-lg text-sm font-semibold transition-colors ${
+                    mode === "vin" ? "bg-panel text-text shadow-sm" : "text-dim hover:text-text"
+                  }`}
+                >
+                  输入 VIN
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === "license"}
+                  onClick={() => switchMode("license")}
+                  className={`min-h-[40px] rounded-lg text-sm font-semibold transition-colors ${
+                    mode === "license" ? "bg-panel text-text shadow-sm" : "text-dim hover:text-text"
+                  }`}
+                >
+                  上传行驶证
+                </button>
               </div>
 
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="选择行驶证照片"
-                onClick={() => inputRef.current?.click()}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    inputRef.current?.click();
-                  }
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragging(true);
-                }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setDragging(false);
-                  pickFile(event.dataTransfer.files?.[0] ?? null);
-                }}
-                className={`relative flex min-h-[248px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
-                  dragging
-                    ? "border-brand bg-brand-soft"
-                    : "border-line-strong bg-raise/50 hover:border-brand/60 hover:bg-brand-soft/40"
-                }`}
-              >
-                {preview ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={preview}
-                      alt="行驶证预览"
-                      className="max-h-[220px] w-auto max-w-full rounded-lg border border-line object-contain shadow-sm"
-                    />
-                    <p className="mt-2 max-w-full truncate text-xs text-dim">
-                      {file?.name} · {file ? formatSize(file.size) : ""}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        pickFile(null);
-                      }}
-                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-panel text-sm text-dim hover:border-danger hover:text-danger"
-                      aria-label="移除照片"
+              {mode === "vin" ? (
+                <div className="pt-1">
+                  <label htmlFor="vin" className="text-sm font-semibold">
+                    车辆识别代号（VIN）
+                  </label>
+                  <input
+                    ref={vinRef}
+                    id="vin"
+                    value={vin}
+                    onChange={(event) => {
+                      setVin(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17));
+                      setError(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") submitVin();
+                    }}
+                    inputMode="text"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    placeholder={EXAMPLE_VIN}
+                    aria-invalid={vin.length > 0 && !vinValid}
+                    aria-describedby="vin-hint"
+                    className="input mono mt-2 h-14 text-lg tracking-[0.12em] uppercase"
+                  />
+                  <div id="vin-hint" className="mt-2 flex items-center justify-between gap-2 text-xs">
+                    <span className="text-dim">17 位数字或字母，不含 I / O / Q</span>
+                    <span
+                      className={`mono tabular ${
+                        vin.length === 0 ? "text-dim" : vinValid ? "text-brand" : "text-warn"
+                      }`}
                     >
-                      ✕
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-panel text-brand shadow-sm">
-                      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
-                        <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" strokeLinecap="round" />
-                      </svg>
+                      {vin.length}/17
                     </span>
-                    <p className="mt-3 text-sm font-semibold">拖入照片，或点击选择</p>
-                    <p className="mt-1 text-xs text-dim">行驶证正本 · 四角完整 · 文字清晰</p>
-                    <p className="mono mt-3 text-[10px] tracking-[0.08em] text-dim">MAX 10MB</p>
-                  </>
-                )}
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/svg+xml"
-                  className="sr-only"
-                  onChange={(event) => pickFile(event.target.files?.[0] ?? null)}
-                />
-              </div>
+                  </div>
+                  <p className="mt-3 rounded-lg bg-raise/70 px-3 py-2 text-[11px] leading-relaxed text-dim">
+                    在行驶证「车辆识别代号」栏、前挡风玻璃左下角或机动车登记证书上可以找到。
+                    也可以直接点下方示例 VIN 体验。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVin(EXAMPLE_VIN);
+                      setError(null);
+                    }}
+                    className="mt-2 text-xs font-semibold text-brand underline decoration-brand/40 underline-offset-4 hover:decoration-brand"
+                  >
+                    填入示例 VIN（大众轿车）
+                  </button>
+                </div>
+              ) : (
+                <div className="pt-1">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label="选择行驶证照片"
+                    onClick={() => inputRef.current?.click()}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        inputRef.current?.click();
+                      }
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setDragging(true);
+                    }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      setDragging(false);
+                      pickFile(event.dataTransfer.files?.[0] ?? null);
+                    }}
+                    className={`relative flex min-h-[232px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
+                      dragging
+                        ? "border-brand bg-brand-soft"
+                        : "border-line-strong bg-raise/50 hover:border-brand/60 hover:bg-brand-soft/40"
+                    }`}
+                  >
+                    {preview ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={preview}
+                          alt="行驶证预览"
+                          className="max-h-[200px] w-auto max-w-full rounded-lg border border-line object-contain shadow-sm"
+                        />
+                        <p className="mt-2 max-w-full truncate text-xs text-dim">
+                          {file?.name} · {file ? formatSize(file.size) : ""}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            pickFile(null);
+                          }}
+                          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-panel text-sm text-dim hover:border-danger hover:text-danger"
+                          aria-label="移除照片"
+                        >
+                          ✕
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-panel text-brand shadow-sm">
+                          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+                            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" strokeLinecap="round" />
+                          </svg>
+                        </span>
+                        <p className="mt-3 text-sm font-semibold">拖入照片，或点击选择</p>
+                        <p className="mt-1 text-xs text-dim">行驶证正面 · 四角完整 · 文字清晰</p>
+                        <p className="mono mt-3 text-[10px] tracking-[0.08em] text-dim">MAX 10MB</p>
+                      </>
+                    )}
+                    <input
+                      ref={inputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/svg+xml"
+                      className="sr-only"
+                      onChange={(event) => pickFile(event.target.files?.[0] ?? null)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={loadSample}
+                    className="mt-2 text-xs font-semibold text-brand underline decoration-brand/40 underline-offset-4 hover:decoration-brand"
+                  >
+                    没有照片？用示例行驶证试试
+                  </button>
+                </div>
+              )}
 
               {error ? (
                 <p role="alert" className="mt-3 rounded-lg bg-danger/8 px-3 py-2 text-xs text-danger">
@@ -282,28 +406,29 @@ export function ValuationApp() {
 
               <button
                 type="button"
-                onClick={submit}
-                disabled={!file || status === "analyzing"}
+                onClick={mode === "vin" ? submitVin : submitPhoto}
+                disabled={status === "analyzing" || (mode === "vin" ? !vinValid : !file)}
                 className="btn-primary mt-3 w-full"
               >
                 {status === "analyzing" ? "正在评估…" : "开始评估"}
               </button>
-              <div className="mt-2 flex items-center justify-between gap-2">
+              <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-dim">
+                <span>
+                  {mode === "vin" ? "VIN 仅用于本次评估" : "照片不保存 · 仅取摘要"}
+                </span>
                 <button
                   type="button"
-                  onClick={loadSample}
-                  className="text-xs font-semibold text-brand underline decoration-brand/40 underline-offset-4 hover:decoration-brand"
+                  onClick={() => switchMode(mode === "vin" ? "license" : "vin")}
+                  className="font-semibold text-brand"
                 >
-                  没有照片？用示例行驶证试试
+                  {mode === "vin" ? "改用行驶证识别 →" : "改用手动输入 VIN →"}
                 </button>
-                <span className="text-[10px] text-dim">照片不保存</span>
               </div>
 
               {status === "analyzing" ? (
                 <ul className="mt-4 space-y-2 rounded-xl bg-raise/70 p-3">
-                  {STEPS.map((text, index) => {
-                    const state =
-                      index < step ? "done" : index === step ? "active" : "waiting";
+                  {steps.map((text, index) => {
+                    const state = index < step ? "done" : index === step ? "active" : "waiting";
                     return (
                       <li key={text} className="flex items-center gap-2 text-xs">
                         <span
@@ -329,20 +454,24 @@ export function ValuationApp() {
             </div>
 
             <p className="mt-3 px-1 text-[11px] leading-relaxed text-dim">
-              样例版：证件字段与行情为演示数据，报告用于展示产品形态，不构成实际报价。
+              样例版：VIN 车型库、证件字段与行情均为演示数据，报告用于展示产品形态，不构成实际报价。
             </p>
           </div>
         </section>
 
         <div ref={reportRef} className="scroll-mt-20">
-          {report ? <div className="mt-14"><ReportView report={report} onReset={reset} /></div> : null}
+          {report ? (
+            <div className="mt-14">
+              <ReportView report={report} onReset={reset} />
+            </div>
+          ) : null}
         </div>
 
         {!report ? (
           <section className="mt-16 grid gap-3 sm:grid-cols-3">
             {[
-              ["照片怎么拍", "行驶证正本平铺，避开反光和遮挡，保证号牌、车辆类型、注册日期清楚可读。"],
-              ["区间怎么来的", "按整备质量折算废钢，加上三元催化、有色金属等可回收件，再扣除拆解与拖运成本。"],
+              ["VIN 在哪", "行驶证「车辆识别代号」栏、前挡风玻璃左下角，共 17 位，不含 I / O / Q。"],
+              ["两种输入", "直接填 VIN，或上传行驶证正面；证件能补齐号牌、首次登记日期与使用性质。"],
               ["下一步做什么", "确认区间后预约回收企业上门验车，现场称重并出具《报废机动车回收证明》。"],
             ].map(([title, text], index) => (
               <div key={title} className="panel p-4">

@@ -47,10 +47,15 @@ export function ReportView({
           <p className="label text-rust">VALUATION REPORT · 残值评估报告</p>
           <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
             {profile.brandModel}
-            <span className="mono ml-2 text-lg font-semibold text-dim">{profile.plate}</span>
+            <span className="mono ml-2 text-lg font-semibold text-dim">
+              {profile.plate ?? `VIN ${profile.vin.slice(0, 3)}…${profile.vin.slice(-4)}`}
+            </span>
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2 no-print">
+          <span className={`tag ${report.source === "vin" ? "text-brand border-brand/40" : "text-dim"}`}>
+            {report.source === "vin" ? "VIN 解析" : "行驶证识别"}
+          </span>
           <span className="tag text-warn">样例报告</span>
           <button
             type="button"
@@ -71,8 +76,8 @@ export function ReportView({
         <Stat label="有效期至" value={`${report.validUntil}（7 天）`} />
       </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="panel-strong relative flex flex-col overflow-hidden p-5 sm:p-6">
+      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="panel-strong relative flex flex-col self-start overflow-hidden p-5 sm:p-6">
           <div
             aria-hidden
             className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10"
@@ -113,7 +118,16 @@ export function ReportView({
             </div>
           </dl>
 
-          <div className="mt-5 rounded-xl bg-brand-soft p-3.5 lg:mt-auto">
+          <div className="mt-5 rounded-xl border border-line px-3.5 py-3">
+            <p className="label text-[10px]">评估口径</p>
+            <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-dim">
+              <li>· 整备质量以行驶证为准；仅有 VIN 时按同平台车型推定。</li>
+              <li>· 废钢单价取四川地区近期回收区间，现场称重后多退少补。</li>
+              <li>· 三元催化按原装件计价，缺件按 10%–15% 扣减。</li>
+            </ul>
+          </div>
+
+          <div className="mt-5 rounded-xl bg-brand-soft p-3.5">
             <p className="text-xs font-semibold text-brand">
               评估把握度：{report.confidence.level}
             </p>
@@ -155,11 +169,11 @@ export function ReportView({
           <h3 className="text-lg font-black tracking-tight">车辆信息</h3>
           <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
             {[
-              ["号牌号码", profile.plate],
+              ["号牌号码", profile.plate ?? "未提供"],
               ["车辆类型", profile.vehicleType],
-              ["使用性质", profile.useNature],
+              ["使用性质", profile.useNature + (report.source === "vin" ? "（推定）" : "")],
               ["品牌型号", profile.brandModel],
-              ["注册日期", profile.registerDate],
+              ["初次登记", profile.registerDate ?? profile.registerNote ?? "以证件为准"],
               ["车龄", `${report.ageYears} 年`],
               ["整备质量", `${profile.curbWeightKg} kg`],
               ["排量 / 燃料", `${profile.displacementMl} ml · ${profile.fuel}`],
@@ -178,11 +192,13 @@ export function ReportView({
             </div>
             <div className="flex gap-2">
               <dt className="shrink-0 text-dim">发动机号码</dt>
-              <dd className="mono">{profile.engineNo}</dd>
+              <dd className="mono">{profile.engineNo ?? "未提供（上传行驶证可补全）"}</dd>
             </div>
           </dl>
           <p className="mt-3 text-[11px] leading-relaxed text-dim">
-            以上字段为样例识别结果，用于演示报告结构；接入 OCR 后显示证件真实字段。
+            {report.source === "vin"
+              ? `VIN 可直接解析品牌、年款与车型类别；本次${report.estimatedFields.join("、")}为同平台推定值，上传行驶证后可校准。`
+              : "以上字段为样例识别结果，用于演示报告结构；接入 OCR 后显示证件真实字段。"}
           </p>
         </div>
 
@@ -244,8 +260,8 @@ export function ReportView({
       <div className="mt-6 rounded-xl border border-dashed border-line-strong bg-raise/60 p-4">
         <p className="text-xs leading-relaxed text-dim">
           <span className="font-semibold text-text">样例说明：</span>
-          本报告由内置规则引擎生成，用于演示“上传行驶证 → 残值报告”的产品形态，不构成实际收购报价。
-          车辆信息为演示数据，未接入真实 OCR、回收企业行情与称重数据。实际办理以《报废机动车回收管理办法》
+          本报告由内置规则引擎生成，用于演示“输入 VIN 或上传行驶证 → 残值报告”的产品形态，不构成实际收购报价。
+          车辆信息为演示数据，未接入真实 VIN 车型库、OCR、回收企业行情与称重数据。实际办理以《报废机动车回收管理办法》
           及回收企业现场验车结果为准。
         </p>
       </div>

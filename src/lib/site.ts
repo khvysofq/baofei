@@ -7,7 +7,7 @@ export const site = {
   // 中文名 / 品牌名，有就填，没有先留空
   nameZh: "报废残值评估",
   // 一句话定位：首页大字下面的那行
-  tagline: "上传行驶证，看清这辆车报废值多少",
+  tagline: "输入 VIN，看清这辆车报废值多少",
   description: "四川地区报废机动车残值评估",
   locale: "zh-CN",
   nav: [

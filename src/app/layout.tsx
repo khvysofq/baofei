@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "报废残值评估",
   description:
-    "上传一张行驶证照片，按四川地区回收行情拆解废钢、三元催化、有色金属等残值，生成报废价格评估报告。",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://112.119.223.47:10802"),
+    "输入车辆识别代号（VIN）或上传行驶证照片，按四川地区回收行情拆解废钢、三元催化、有色金属等残值，生成报废价格评估报告。",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://baofei.publicrandom.com"),
   openGraph: {
     title: "报废残值评估",
-    description: "上传行驶证，30 秒看清这辆车报废值多少。",
+    description: "输入 VIN 或上传行驶证，30 秒看清这辆车报废值多少。",
     type: "website",
     siteName: "报废残值评估",
     locale: "zh_CN",
@@ -29,14 +29,14 @@ export const metadata: Metadata = {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "报废残值评估：上传行驶证，看清报废值多少",
+        alt: "报废残值评估：输入 VIN，看清报废值多少",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "报废残值评估",
-    description: "上传行驶证，自动拆解残值并生成评估报告。",
+    description: "输入 VIN 或上传行驶证，自动拆解残值并生成评估报告。",
     images: ["/og.png"],
   },
 };
