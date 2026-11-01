@@ -21,15 +21,25 @@ src/lib/vin/
 
 `queryVin(vin)` 的行为：
 
-1. 本地 17 位校验（`A–H J–N P–Z 0–9`，不含 I/O/Q）。
-2. 负缓存：10 分钟内查过且全部渠道无结果，直接返回 `NOT_FOUND`，不重复计费。
-3. 按 `VIN_PROVIDER_ORDER` 顺序遍历已配置渠道：
+1. **本地国标校验（在任何渠道调用之前）**：17 位 → 字符集 → 第 9 位校验位字符 → 第 10 位年份代码 → 模 11 校验码。
+   不通过直接抛 `INVALID_VIN`，**不查缓存、不调渠道、不花钱**。
+2. 同实例并发去重：同一 VIN 已经在查时，后续请求复用第一个 Promise，不会重复扣费。
+3. 负缓存：10 分钟内查过且全部渠道无结果，直接返回 `NOT_FOUND`，不重复计费。
+4. 按 `VIN_PROVIDER_ORDER` 顺序遍历已配置渠道：
    - 先查 30 天成功缓存（key `baofei:vin:v1:spec:<provider>:<vin>`）；
    - 未命中则调渠道；`TIMEOUT` / `NETWORK` / `UPSTREAM_ERROR` / `RATE_LIMITED` / `BAD_RESPONSE` 才允许重试（默认 0 次，按次计费接口别乱重试）；
    - 渠道报错或 `NOT_FOUND` 就切下一个渠道。
-4. 全部失败：
+5. 全部失败：
    - 都是 `NOT_FOUND` → 抛 `NOT_FOUND`（用户需要核对 VIN）；
    - 其他 → 抛 `UPSTREAM_ERROR`。API 层据此决定「明确拒绝」还是「降级演示推定 + 提示」。
+
+## 缓存边界
+
+- 缓存的是**渠道返回的车型档案**（`VinVehicleSpec`），不是报告。
+- 同一 VIN 30 天内直接复用档案，不再调用渠道、不再计费。
+- 残值报告**每次重新计算**：报告编号、出具时间、有效期、车龄、区间都按请求当天重算，行情系数改了立即生效。
+- 无结果另做 10 分钟负缓存；成功后会主动删除该 VIN 的负缓存。
+- 开 `VIN_DEBUG_RAW=1` 时渠道原始 JSON 写进 `vin_lookups.raw`（不入缓存）。
 
 ## 环境变量
 
@@ -39,6 +49,7 @@ src/lib/vin/
 | `VIN_TIMEOUT_MS` | 6000 | 单次渠道调用超时 |
 | `VIN_CACHE_TTL_SECONDS` | 2592000（30 天） | VIN→车型基本不变 |
 | `VIN_MISS_TTL_SECONDS` | 600 | 无结果负缓存，防刷额度 |
+| `VIN_CHECK_DIGIT` | strict | `off` 只放宽模 11 校验（结构/年份位仍校验），用于旧车兼容 |
 | `VIN_DEBUG_RAW` | 0 | 1 = 把渠道原始返回写进 `vin_lookups.raw` |
 | `JISUEPC_APPKEY` | 空 | 极速车服 appkey；为空则该渠道视为未配置 |
 | `JISUEPC_BASE_URL` | `https://api.jisuepc.com` | 便于切测试环境 |
@@ -74,7 +85,7 @@ export const yourProvider: VinProvider = {
 2. 在 `src/lib/vin/index.ts` 的 `PROVIDERS` 数组里加入（或在模块加载时 `registerVinProvider()`）。
 3. 在 `VIN_PROVIDER_ORDER` 里排优先级。
 4. 字段映射统一用 `normalize.ts` 的 `parseNumber` / `parsePriceFen` / `normalizeEmission` /
-   `classifyVehicle`，不要各渠道各写一套。
+   `classifyVehicle`，不要各渠道各写一套。VIN 合法性只信 `validateVin()`（含国标校验位），渠道自己的 `strict` 参数不得作为唯一校验。
 5. 补单测：mock `fetch` 验证字段映射 + 错误码映射（参考 `tests/vin.test.ts`）。
 
 渠道专属怪癖写在该 provider 文件顶部的注释里，例如极速车服的 `status` 有时是数字 `0`、有时是字符串

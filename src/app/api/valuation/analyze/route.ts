@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
-import { buildValuationReport, isValidVin, normalizeVin } from "@/lib/valuation/engine";
+import { buildValuationReport } from "@/lib/valuation/engine";
+import { validateVin } from "@/lib/vin/normalize";
 import { explainVinError, queryVin } from "@/lib/vin";
 import type { VinVehicleSpec } from "@/lib/vin/types";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 /** 首页「填入示例 VIN」使用的演示车架号；跳过第三方渠道，保证样例始终可用。 */
-const DEMO_VIN = "LSVAA49J1C2345678";
+const DEMO_VIN = "LSVAA49J5C2345678";
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/svg+xml"];
 
 function badRequest(error: string, status = 400) {
@@ -31,10 +32,16 @@ export async function POST(request: Request) {
     if (typeof payload.vin !== "string" || !payload.vin.trim()) {
       return badRequest("请填写车辆识别代号（VIN）。");
     }
-    const vin = normalizeVin(payload.vin);
-    if (!isValidVin(vin)) {
-      return badRequest("VIN 应为 17 位数字或字母，且不含 I、O、Q。");
+    const validation = validateVin(payload.vin, {
+      checkDigit: process.env.VIN_CHECK_DIGIT !== "off",
+    });
+    if (!validation.ok) {
+      return NextResponse.json(
+        { ok: false, error: validation.message, code: validation.code },
+        { status: 400 },
+      );
     }
+    const vin = validation.vin;
 
     // 真实 VIN 渠道优先；渠道无结果时明确告知，渠道故障时降级为演示推定并标注原因。
     let spec: VinVehicleSpec | null = null;

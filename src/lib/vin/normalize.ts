@@ -4,9 +4,152 @@ export function normalizeVin(input: string): string {
   return input.replace(/[\s-]/g, "").toUpperCase();
 }
 
-/** 17 位；只允许数字与 A–Z，且不含 I / O / Q。 */
+/** 字符→数值（GB 16735 / ISO 3779）：I、O、Q 不参与编号，故不在表内。 */
+const VIN_TRANSLITERATION: Record<string, number> = {
+  A: 1,
+  B: 2,
+  C: 3,
+  D: 4,
+  E: 5,
+  F: 6,
+  G: 7,
+  H: 8,
+  J: 1,
+  K: 2,
+  L: 3,
+  M: 4,
+  N: 5,
+  P: 7,
+  R: 9,
+  S: 2,
+  T: 3,
+  U: 4,
+  V: 5,
+  W: 6,
+  X: 7,
+  Y: 8,
+  Z: 9,
+};
+
+/** 第 1–17 位权重，第 9 位（校验位）权重为 0。 */
+const VIN_WEIGHTS = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2] as const;
+
+/** 年份位合法字符（30 年循环），排除 U、Z、0、I、O、Q。 */
+const VIN_YEAR_CHARS = "123456789ABCDEFGHJKLMNPRSTVWXY";
+
+/** 17 位结构校验：数字 + A–Z，排除 I / O / Q。 */
+const VIN_STRUCTURE = /^[A-HJ-NPR-Z0-9]{17}$/;
+
+export type VinValidationCode =
+  | "EMPTY"
+  | "LENGTH"
+  | "CHARSET"
+  | "CHECK_DIGIT_POSITION"
+  | "YEAR_CODE"
+  | "CHECK_DIGIT";
+
+export type VinValidation = {
+  ok: boolean;
+  /** 归一化后的 VIN（去空格/短横线、大写） */
+  vin: string;
+  code: VinValidationCode | null;
+  message: string;
+  expectedCheckDigit: string | null;
+  actualCheckDigit: string | null;
+};
+
+/**
+ * 按 GB 16735 / ISO 3779 计算第 9 位校验码。
+ * 加权和 mod 11，余数 10 记作 X；返回 null 表示字符集内没有对应值。
+ */
+export function computeVinCheckDigit(input: string): string | null {
+  const vin = normalizeVin(input);
+  if (vin.length !== 17) return null;
+
+  let sum = 0;
+  for (let index = 0; index < 17; index += 1) {
+    const char = vin[index];
+    const value = /\d/.test(char) ? Number(char) : VIN_TRANSLITERATION[char];
+    if (value === undefined) return null;
+    sum += value * VIN_WEIGHTS[index];
+  }
+
+  const remainder = sum % 11;
+  return remainder === 10 ? "X" : String(remainder);
+}
+
+/**
+ * VIN 合法性校验，按“结构 → 校验位位置 → 年份位 → 校验位”逐层报错。
+ *
+ * `checkDigit: false` 只放宽模 11 校验（部分老旧国产/改装车 VIN 不符合校验位），
+ * 长度、字符集、第 9 位与年份位始终校验——这些不通过一定不是有效 VIN。
+ */
+export function validateVin(
+  input: string,
+  options: { checkDigit?: boolean } = {},
+): VinValidation {
+  const vin = normalizeVin(input);
+  const fail = (
+    code: VinValidationCode,
+    message: string,
+    extra: Partial<VinValidation> = {},
+  ): VinValidation => ({
+    ok: false,
+    vin,
+    code,
+    message,
+    expectedCheckDigit: extra.expectedCheckDigit ?? null,
+    actualCheckDigit: extra.actualCheckDigit ?? null,
+  });
+
+  if (!vin) return fail("EMPTY", "请填写车辆识别代号（VIN）。");
+
+  if (vin.length !== 17) {
+    return fail("LENGTH", `VIN 应为 17 位，当前 ${vin.length} 位，请核对后重试。`);
+  }
+
+  if (!VIN_STRUCTURE.test(vin)) {
+    return fail(
+      "CHARSET",
+      "VIN 只能包含数字和字母，且不含 I、O、Q，请核对行驶证上的车辆识别代号。",
+    );
+  }
+
+  if (!/^[0-9X]$/.test(vin[8])) {
+    return fail("CHECK_DIGIT_POSITION", "VIN 第 9 位应为校验位（0–9 或 X）。");
+  }
+
+  if (!VIN_YEAR_CHARS.includes(vin[9])) {
+    return fail("YEAR_CODE", "VIN 第 10 位不是有效的年份代码，请核对后重试。");
+  }
+
+  if (options.checkDigit !== false) {
+    const expected = computeVinCheckDigit(vin);
+    if (expected === null) {
+      return fail("CHARSET", "VIN 含有无法识别的字符，请核对后重试。");
+    }
+    if (expected !== vin[8]) {
+      return fail(
+        "CHECK_DIGIT",
+        `VIN 校验位不匹配（第 9 位应为 ${expected}，实际为 ${vin[8]}），请核对行驶证后重试。`,
+        { expectedCheckDigit: expected, actualCheckDigit: vin[8] },
+      );
+    }
+  }
+
+  return {
+    ok: true,
+    vin,
+    code: null,
+    message: "",
+    expectedCheckDigit: vin[8],
+    actualCheckDigit: vin[8],
+  };
+}
+
+/** 布尔快捷方式：17 位 + 字符集 + 校验位全通过。 */
 export function isValidVin(input: string): boolean {
-  return /^[A-HJ-NPR-Z0-9]{17}$/.test(normalizeVin(input));
+  return validateVin(input).ok;
 }
 
 const YEAR_CODES: Record<string, number> = {

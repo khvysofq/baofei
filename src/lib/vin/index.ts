@@ -1,6 +1,6 @@
 import { cacheDelete, cacheGet, cacheSet } from "../cache";
 import { recordVinLookup } from "./log";
-import { isValidVin, normalizeVin } from "./normalize";
+import { validateVin } from "./normalize";
 import { jisuepcProvider } from "./providers/jisuepc";
 import {
   VinQueryError,
@@ -123,21 +123,43 @@ export type VinLookupOptions = {
   skipProviders?: string[];
 };
 
+/** 同一实例内的并发去重：相同 VIN 已在查时不再重复计费。 */
+const IN_FLIGHT = new Map<string, Promise<VinLookupOutcome>>();
+
 export async function queryVin(
   input: string,
   options: VinLookupOptions = {},
 ): Promise<VinLookupOutcome> {
-  const vin = normalizeVin(input);
-  if (!isValidVin(vin)) {
+  // 国标校验在调用任何渠道之前完成：不合法直接失败，不花一分钱。
+  const validation = validateVin(input, {
+    checkDigit: process.env.VIN_CHECK_DIGIT !== "off",
+  });
+  if (!validation.ok) {
     throw new VinQueryError({
       code: "INVALID_VIN",
-      message: "VIN 应为 17 位数字或字母，且不含 I、O、Q。",
+      message: validation.message,
       providerId: "local",
       providerLabel: "本地校验",
       retryable: false,
     });
   }
 
+  const vin = validation.vin;
+  const key = `${vin}:${options.allowCache === false ? "nocache" : "cache"}`;
+  const running = IN_FLIGHT.get(key);
+  if (running) return running;
+
+  const task = lookupVin(vin, options).finally(() => {
+    IN_FLIGHT.delete(key);
+  });
+  IN_FLIGHT.set(key, task);
+  return task;
+}
+
+async function lookupVin(
+  vin: string,
+  options: VinLookupOptions,
+): Promise<VinLookupOutcome> {
   const providers = configuredProviders().filter(
     (provider) => !options.skipProviders?.includes(provider.id),
   );

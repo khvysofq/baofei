@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReportView } from "@/components/valuation/report-view";
-import { isValidVin, type ValuationReport } from "@/lib/valuation/engine";
+import { type ValuationReport } from "@/lib/valuation/engine";
+import { validateVin } from "@/lib/vin/normalize";
 
 type Status = "idle" | "analyzing" | "done";
 type Mode = "vin" | "license";
 
-const EXAMPLE_VIN = "LSVAA49J1C2345678";
+const EXAMPLE_VIN = "LSVAA49J5C2345678";
 
 const VIN_STEPS = ["校验 VIN 格式", "查询车辆档案", "匹配四川回收行情", "生成残值评估报告"];
 const PHOTO_STEPS = ["读取行驶证照片", "识别车辆与排量", "匹配四川回收行情", "生成残值评估报告"];
@@ -32,7 +33,8 @@ export function ValuationApp() {
   const reportRef = useRef<HTMLDivElement>(null);
 
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
-  const vinValid = isValidVin(vin);
+  const vinValid = useMemo(() => validateVin(vin).ok, [vin]);
+  const canSubmitVin = vin.trim().length > 0;
   const steps = mode === "vin" ? VIN_STEPS : PHOTO_STEPS;
 
   useEffect(() => {
@@ -125,8 +127,9 @@ export function ValuationApp() {
   );
 
   const submitVin = useCallback(() => {
-    if (!vinValid) {
-      setError("VIN 应为 17 位数字或字母，且不含 I、O、Q。");
+    const validation = validateVin(vin);
+    if (!validation.ok) {
+      setError(validation.message);
       vinRef.current?.focus();
       return;
     }
@@ -137,7 +140,7 @@ export function ValuationApp() {
         body: JSON.stringify({ vin }),
       }),
     );
-  }, [runRequest, vin, vinValid]);
+  }, [runRequest, vin]);
 
   const submitPhoto = useCallback(() => {
     if (!file) {
@@ -291,7 +294,7 @@ export function ValuationApp() {
                     className="input mono mt-2 h-14 text-lg tracking-[0.12em] uppercase"
                   />
                   <div id="vin-hint" className="mt-2 flex items-center justify-between gap-2 text-xs">
-                    <span className="text-dim">17 位数字或字母，不含 I / O / Q</span>
+                    <span className="text-dim">17 位，不含 I / O / Q，第 9 位为校验位</span>
                     <span
                       className={`mono tabular ${
                         vin.length === 0 ? "text-dim" : vinValid ? "text-brand" : "text-warn"
@@ -407,7 +410,7 @@ export function ValuationApp() {
               <button
                 type="button"
                 onClick={mode === "vin" ? submitVin : submitPhoto}
-                disabled={status === "analyzing" || (mode === "vin" ? !vinValid : !file)}
+                disabled={status === "analyzing" || (mode === "vin" ? !canSubmitVin : !file)}
                 className="btn-primary mt-3 w-full"
               >
                 {status === "analyzing" ? "正在评估…" : "开始评估"}

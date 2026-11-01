@@ -3,10 +3,12 @@ import { buildValuationReport } from "@/lib/valuation/engine";
 import { jisuepcProvider } from "@/lib/vin/providers/jisuepc";
 import { listVinProviders, queryVin, registerVinProvider } from "@/lib/vin";
 import {
+  computeVinCheckDigit,
   isValidVin,
   normalizeEmission,
   normalizeVin,
   parsePriceFen,
+  validateVin,
 } from "@/lib/vin/normalize";
 import { VinQueryError, type VinProvider } from "@/lib/vin/types";
 
@@ -65,6 +67,37 @@ describe("VIN 归一化与字段解析", () => {
     expect(normalizeVin(" lsv-al41z 882104202 ")).toBe(SAMPLE_VIN);
     expect(isValidVin(SAMPLE_VIN)).toBe(true);
     expect(isValidVin(`${SAMPLE_VIN}0`)).toBe(false);
+  });
+
+  it("按国标计算并校验第 9 位校验码", () => {
+    expect(computeVinCheckDigit(SAMPLE_VIN)).toBe("8");
+    expect(computeVinCheckDigit("1HGCM82633A004352")).toBe("3");
+    expect(validateVin(SAMPLE_VIN).ok).toBe(true);
+  });
+
+  it("逐层给出校验失败原因，且不合法时不放行", () => {
+    expect(validateVin("")).toMatchObject({ ok: false, code: "EMPTY" });
+    expect(validateVin("LSVAA49J5C234567")).toMatchObject({ ok: false, code: "LENGTH" });
+    expect(validateVin("LSVAA49J5C23456I8")).toMatchObject({ ok: false, code: "CHARSET" });
+    expect(validateVin("LSVAA49JAC2345678")).toMatchObject({
+      ok: false,
+      code: "CHECK_DIGIT_POSITION",
+    });
+    expect(validateVin("LSVAA49J5U2345678")).toMatchObject({ ok: false, code: "YEAR_CODE" });
+
+    const mismatch = validateVin("LSVAA49J1C2345678");
+    expect(mismatch).toMatchObject({
+      ok: false,
+      code: "CHECK_DIGIT",
+      expectedCheckDigit: "5",
+      actualCheckDigit: "1",
+    });
+    expect(mismatch.message).toContain("校验位");
+  });
+
+  it("可选关闭模 11 校验，结构校验仍然生效", () => {
+    expect(validateVin("LSVAA49J1C2345678", { checkDigit: false }).ok).toBe(true);
+    expect(validateVin("LSVAA49J1C23456I8", { checkDigit: false }).ok).toBe(false);
   });
 
   it("排放标准统一成罗马数字", () => {
@@ -223,7 +256,7 @@ describe("多渠道路由", () => {
     registerVinProvider(fakeProvider("test-ok", "ok"));
     vi.stubEnv("VIN_PROVIDER_ORDER", "test-quota,test-ok");
 
-    const outcome = await queryVin("LGBH52E0XFY123456", {
+    const outcome = await queryVin(SAMPLE_VIN, {
       allowCache: false,
       log: false,
     });
@@ -242,7 +275,7 @@ describe("多渠道路由", () => {
     vi.stubEnv("VIN_PROVIDER_ORDER", "test-miss-a,test-miss-b");
 
     await expect(
-      queryVin("LGBH52E0XFY123456", { allowCache: false, log: false }),
+      queryVin(SAMPLE_VIN, { allowCache: false, log: false }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 

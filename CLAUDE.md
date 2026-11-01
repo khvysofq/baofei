@@ -80,6 +80,7 @@ tests/                   vitest 单测（domain 与 rules 必测）
 8. 演示注入事件 `source = demo_controller`，在库、API、UI 上都保留演示身份。
 9. 未确认字段（`confirmed = false`）不得产生对用户的承诺文案；`unknown` 与 `false` 分开存。
 10. 只填"四川"时市州保持 unknown，不得补成成都；车辆所在地与登记地分开存，不从一方复制。
+11. VIN 必须先过 `validateVin()`（GB 16735：17 位 / 字符集 / 第 9 位校验码 / 年份位）再调渠道；不合法直接 400，不查缓存、不计费。渠道返回的车型档案缓存 30 天，但残值报告必须每次重算。
 
 ## 设计系统：废土科技风（Wasteland Tech）
 
