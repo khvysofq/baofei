@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { formatYuan } from "@/lib/domain/money";
 import type { ValuationReport } from "@/lib/valuation/engine";
+import {
+  ACQUISITION_PROVIDER,
+  ACQUISITION_VERSION,
+  TOW_FREE_KM,
+  quoteAcquisition,
+  resolveCategory,
+} from "@/lib/valuation/acquisition";
 
 const TONE_DOT: Record<string, string> = {
   up: "bg-brand",
@@ -52,6 +59,16 @@ export function ReportView({
   const netLow = roundToYuan(netMid * 0.94);
   const netHigh = roundToYuan(netMid * 1.08);
   const fixedDeductionFen = Math.max(0, report.deductionsFen - report.towingFen);
+
+  // 合作方收购价：到厂口径，按价目表分档计价，与上面的残值区间口径不同。
+  const acquisitionCategory = resolveCategory({ vehicleType: profile.vehicleType });
+  const acquisition = acquisitionCategory
+    ? quoteAcquisition({
+        category: acquisitionCategory,
+        weightKg: profile.curbWeightKg,
+        steelRims: wheelType === "steel",
+      })
+    : null;
 
   return (
     <section id="report" className="scroll-mt-20 pb-24 print:pb-0 sm:pb-28">
@@ -280,6 +297,79 @@ export function ReportView({
             ))}
           </ul>
         </div>
+      </div>
+
+      <div className="panel mt-6 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-lg font-black tracking-tight">合作方收购价</h3>
+            <p className="mt-1 text-xs text-dim">
+              回收企业按吨收购的到厂口径，与上方残值区间不是同一算法：残值看「车值多少」，收购价看「按吨能付多少」。
+            </p>
+          </div>
+          <span className="tag shrink-0">
+            {ACQUISITION_PROVIDER} · v{ACQUISITION_VERSION}
+          </span>
+        </div>
+
+        {acquisition ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+            <dl className="space-y-2 text-sm">
+              <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+                <dt className="text-dim">车型档位</dt>
+                <dd className="font-semibold">{acquisition.categoryLabel}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+                <dt className="text-dim">计价方式</dt>
+                <dd className="mono font-semibold">
+                  {acquisition.pricingMode === "unit"
+                    ? "按辆计价"
+                    : acquisition.fenPerTon === null
+                      ? "待确认"
+                      : `¥${formatYuan(acquisition.fenPerTon)}/吨 × ${(
+                          (acquisition.weightKg ?? 0) / 1000
+                        ).toFixed(3)} 吨`}
+                </dd>
+              </div>
+              {acquisition.steelRimDiscount ? (
+                <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+                  <dt className="text-dim">铁圈缺失（400 元/吨）</dt>
+                  <dd className="mono font-semibold text-rust">已按每吨减 400 元</dd>
+                </div>
+              ) : null}
+              <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+                <dt className="text-dim">缺件扣款</dt>
+                <dd className="mono font-semibold">
+                  {acquisition.deductionsFen > 0
+                    ? `−¥${formatYuan(acquisition.deductionsFen)}`
+                    : "现场验车核定"}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="sm:text-right">
+              <p className="label">到厂收购价</p>
+              <p className="mono mt-1 text-3xl font-black tracking-tight text-brand">
+                {acquisition.netFen === null
+                  ? "待确认"
+                  : `¥${formatYuan(acquisition.netFen)}`}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-warn">
+            车型不在价目表范围内（当前车型：{profile.vehicleType}），收购价待人工核定。
+          </p>
+        )}
+
+        <ul className="mt-4 space-y-1 border-t border-line pt-3 text-[11px] leading-relaxed text-dim">
+          <li>· {TOW_FREE_KM} 公里内免费拖车，超出部分 5 元/公里另计，不含在上述金额中。</li>
+          <li>· 缺件按目录逐项扣减：备胎、电瓶、铝圈、线束、水箱冷凝器、启动机发电机压缩机 ABS、电脑板等。</li>
+          <li>· 车辆有缺失、事故或发动机变速箱拆散时，改按地磅称重计价。</li>
+          {acquisition?.notices.map((notice) => (
+            <li key={notice}>· {notice}</li>
+          ))}
+        </ul>
       </div>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
