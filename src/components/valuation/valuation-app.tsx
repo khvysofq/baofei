@@ -9,7 +9,7 @@ type Mode = "vin" | "license";
 
 const EXAMPLE_VIN = "LSVAA49J1C2345678";
 
-const VIN_STEPS = ["校验 VIN 格式", "解析品牌与年款", "匹配四川回收行情", "生成残值评估报告"];
+const VIN_STEPS = ["校验 VIN 格式", "查询车辆档案", "匹配四川回收行情", "生成残值评估报告"];
 const PHOTO_STEPS = ["读取行驶证照片", "识别车辆与排量", "匹配四川回收行情", "生成残值评估报告"];
 
 function formatSize(bytes: number): string {
@@ -454,7 +454,7 @@ export function ValuationApp() {
             </div>
 
             <p className="mt-3 px-1 text-[11px] leading-relaxed text-dim">
-              样例版：VIN 车型库、证件字段与行情均为演示数据，报告用于展示产品形态，不构成实际报价。
+              VIN 车型档案来自第三方数据服务；残值仍由公开规则测算，用于展示产品形态，不构成实际报价。
             </p>
           </div>
         </section>
@@ -462,6 +462,14 @@ export function ValuationApp() {
         <div ref={reportRef} className="scroll-mt-20">
           {report ? (
             <div className="mt-14">
+              {report.dataSource.notice ? (
+                <p
+                  role="status"
+                  className="mb-4 rounded-lg border border-warn/40 bg-warn/8 px-3.5 py-2.5 text-xs leading-relaxed text-warn"
+                >
+                  {report.dataSource.notice}
+                </p>
+              ) : null}
               <ReportView report={report} onReset={reset} />
             </div>
           ) : null}

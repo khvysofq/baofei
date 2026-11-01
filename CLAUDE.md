@@ -6,7 +6,8 @@
 ## 一句话
 
 7 个页面（/start /plan /documents /quotes /appointment /case /subsidy）+ 3 个固定场景（S1 S2 S3），
-确定性规则引擎，全程"演示模式"，不接真实政务/企业接口，不采集真实证件。
+确定性规则引擎，办理流程与行情为"演示模式"，不接真实政务/支付接口，不采集真实证件。
+例外：VIN 车型档案可接真实第三方渠道（`src/lib/vin/`，默认极速车服），失败时降级为本地推定。
 
 ## 技术栈（已定，不要替换）
 
@@ -51,6 +52,8 @@ src/lib/services/        适配层（parseIntake / inspectSample / evaluatePlan 
 src/lib/db.ts            pg 连接池 + 事务助手
 src/lib/cache.ts         ioredis 客户端（键必须带 baofei: 前缀）
 src/lib/storage.ts       S3 客户端（端点读 S3_ENDPOINT）
+src/lib/vin/             VIN 渠道层：类型/归一化/路由/缓存/日志，providers/ 下每个渠道一个文件
+src/lib/valuation/       残值规则引擎（用 VIN 档案或演示推定出报告）
 src/fixtures/            demo-sc-v1.1 场景、报价、材料、阶段事件
 db/migrations/*.sql      只增不改
 tests/                   vitest 单测（domain 与 rules 必测）
@@ -58,7 +61,8 @@ tests/                   vitest 单测（domain 与 rules 必测）
 
 ## 数据与环境
 
-`.env.local`（0600，已 gitignore）含 `DATABASE_URL` `REDIS_URL` `REDIS_KEY_PREFIX` `S3_*`。
+`.env.local`（0600，已 gitignore）含 `DATABASE_URL` `REDIS_URL` `REDIS_KEY_PREFIX` `S3_*`，
+以及 VIN 渠道变量 `VIN_PROVIDER_ORDER` `JISUEPC_APPKEY` 等（见 `.env.example`）。
 **不要打印、提交或修改其中密钥**；不要在代码里写死连接串。Docker 服务只绑 127.0.0.1。
 
 容器化部署留 `docker-compose.yml`：`networks: {shared: {external: true}}`，`env_file: /srv/apps/baofei/.env`，

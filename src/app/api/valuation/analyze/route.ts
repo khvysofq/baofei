@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { buildValuationReport, isValidVin, normalizeVin } from "@/lib/valuation/engine";
+import { explainVinError, queryVin } from "@/lib/vin";
+import type { VinVehicleSpec } from "@/lib/vin/types";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/svg+xml"];
@@ -31,10 +33,34 @@ export async function POST(request: Request) {
     if (!isValidVin(vin)) {
       return badRequest("VIN 应为 17 位数字或字母，且不含 I、O、Q。");
     }
+
+    // 真实 VIN 渠道优先；渠道无结果时明确告知，渠道故障时降级为演示推定并标注原因。
+    let spec: VinVehicleSpec | null = null;
+    let notice: string | null = null;
+    try {
+      const outcome = await queryVin(vin);
+      spec = outcome.spec;
+    } catch (caught) {
+      const explained = explainVinError(caught);
+      if (!explained.shouldFallbackToDemo) {
+        const status = explained.code === "INVALID_VIN" ? 400 : 404;
+        return NextResponse.json(
+          { ok: false, error: explained.message, code: explained.code },
+          { status },
+        );
+      }
+      notice = explained.message;
+      console.warn(
+        `[vin] ${vin} 渠道查询失败，降级演示推定：${explained.code} ${explained.message}`,
+      );
+    }
+
     const report = buildValuationReport({
       seed: createHash("sha256").update(`vin:${vin}`).digest("hex"),
       source: "vin",
       vin,
+      spec,
+      notice,
     });
     return NextResponse.json({ ok: true, report });
   }

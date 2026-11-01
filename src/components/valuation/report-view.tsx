@@ -53,9 +53,18 @@ export function ReportView({
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2 no-print">
-          <span className={`tag ${report.source === "vin" ? "text-brand border-brand/40" : "text-dim"}`}>
-            {report.source === "vin" ? "VIN 解析" : "行驶证识别"}
+          <span className="tag text-brand border-brand/40">
+            {report.dataSource.kind === "provider"
+              ? `${report.dataSource.providerLabel ?? "VIN 渠道"} · 实车数据`
+              : report.source === "vin"
+                ? "VIN 推定"
+                : "行驶证识别"}
           </span>
+          {report.dataSource.kind === "provider" ? (
+            <span className="tag text-dim">
+              {report.dataSource.cached ? "缓存命中" : "实时查询"}
+            </span>
+          ) : null}
           <span className="tag text-warn">样例报告</span>
           <button
             type="button"
@@ -178,6 +187,16 @@ export function ReportView({
               ["整备质量", `${profile.curbWeightKg} kg`],
               ["排量 / 燃料", `${profile.displacementMl} ml · ${profile.fuel}`],
               ["排放标准", profile.emission],
+              [
+                "数据来源",
+                report.dataSource.kind === "provider"
+                  ? `${report.dataSource.providerLabel ?? "VIN 渠道"}${
+                      report.dataSource.cached ? "（缓存）" : "（实时）"
+                    }`
+                  : report.source === "vin"
+                    ? "规则推定（演示）"
+                    : "样例识别",
+              ],
             ].map(([label, value]) => (
               <div key={label}>
                 <dt className="label text-[10px]">{label}</dt>
@@ -196,9 +215,19 @@ export function ReportView({
             </div>
           </dl>
           <p className="mt-3 text-[11px] leading-relaxed text-dim">
-            {report.source === "vin"
-              ? `VIN 可直接解析品牌、年款与车型类别；本次${report.estimatedFields.join("、")}为同平台推定值，上传行驶证后可校准。`
-              : "以上字段为样例识别结果，用于演示报告结构；接入 OCR 后显示证件真实字段。"}
+            {report.dataSource.kind === "provider"
+              ? `车型档案由${report.dataSource.providerLabel}于 ${
+                  report.dataSource.fetchedAt
+                    ? formatDateTime(report.dataSource.fetchedAt)
+                    : "近期"
+                } 返回；${
+                  report.estimatedFields.length > 0
+                    ? `${report.estimatedFields.join("、")}为推定或待补项`
+                    : "关键参数均来自实车数据"
+                }，最终以行驶证与现场验车为准。`
+              : report.source === "vin"
+                ? `未取到第三方车型档案，本次按 VIN 品牌位与年款位推定；${report.estimatedFields.join("、")}为推定值，上传行驶证后可校准。`
+                : "以上字段为样例识别结果，用于演示报告结构；接入 OCR 后显示证件真实字段。"}
           </p>
         </div>
 
@@ -260,9 +289,9 @@ export function ReportView({
       <div className="mt-6 rounded-xl border border-dashed border-line-strong bg-raise/60 p-4">
         <p className="text-xs leading-relaxed text-dim">
           <span className="font-semibold text-text">样例说明：</span>
-          本报告由内置规则引擎生成，用于演示“输入 VIN 或上传行驶证 → 残值报告”的产品形态，不构成实际收购报价。
-          车辆信息为演示数据，未接入真实 VIN 车型库、OCR、回收企业行情与称重数据。实际办理以《报废机动车回收管理办法》
-          及回收企业现场验车结果为准。
+          {report.dataSource.kind === "provider"
+            ? `车辆档案来自${report.dataSource.providerLabel}实时查询；残值由内置规则引擎测算，用于演示“输入 VIN → 残值报告”的产品形态，不构成实际收购报价。实际办理以《报废机动车回收管理办法》及回收企业现场验车结果为准。`
+            : "本报告由内置规则引擎生成，用于演示“输入 VIN 或上传行驶证 → 残值报告”的产品形态，不构成实际收购报价。车辆信息为演示数据。实际办理以《报废机动车回收管理办法》及回收企业现场验车结果为准。"}
         </p>
       </div>
 

@@ -40,32 +40,41 @@
 - 极速数据作为性价比主通道，0.045 元/次，适合大部分国产燃油车。
 - 精友适合保险/事故车深度数据，报价制，现阶段不必上。
 
-## 4. 接入设计（待实现）
+## 4. 接入设计（2026-11-01 已实现）
 
 ```ts
-// src/lib/vin/provider.ts
-export type VinInfo = {
-  brand: string;
-  series?: string;
-  model?: string;
-  year?: number;
-  displacementMl?: number;
-  emission?: string;
-  curbWeightKg?: number;
-  fuel?: string;
-  source: "jisu" | "juhe" | "che300" | "local";
+// 实际落地：src/lib/vin/
+export type VinVehicleSpec = {
+  vin: string;
+  brand: string | null;
+  seriesName: string | null;
+  modelName: string | null;
+  modelYear: number | null;
+  displacementMl: number | null;
+  emissionStandard: string | null;
+  curbWeightKg: number | null;
+  fuelType: string | null;
+  energyType: "gasoline" | "diesel" | "hybrid" | "electric" | "other";
+  newCarPriceFen: number | null;
+  vehicleClass: VehicleClass;
+  // …其余字段见 src/lib/vin/types.ts
 };
 
 export interface VinProvider {
-  decode(vin: string): Promise<VinInfo | null>;
+  id: string;
+  label: string;
+  costFenPerQuery: number | null;
+  isConfigured(): boolean;
+  query(vin: string, context: VinQueryContext): Promise<VinProviderResult>;
 }
 ```
 
-- `JISU_API_KEY` 放 `.env.local` / 容器环境变量，只在服务端读取，不暴露给浏览器。
-- 缓存：`baofei:vin:<vin>`，TTL 30 天（VIN 不变，命中率高，可显著省调用量）。
-- 兜底顺序：缓存 → 第三方 → 本地 WMI/年款 → 标记「推定」。
-- 报告字段：第三方有值就用，缺字段沿用现有推定逻辑，并在 `estimatedFields` 里列出。
-- 监控：记录 provider、耗时、命中/失败，不记录 VIN 明文以外的用户信息。
+- `JISUEPC_APPKEY` 放 `.env.local` / 容器环境变量，只在服务端读取，不暴露给浏览器。
+- 缓存：`baofei:vin:v1:spec:<provider>:<vin>`，TTL 30 天；无结果另做 10 分钟负缓存。
+- 兜底顺序：缓存 → 渠道按 `VIN_PROVIDER_ORDER` 依次尝试 → 本地 WMI/年款 → 标记「推定」。
+- 报告字段：渠道有值就用，缺字段沿用现有推定逻辑，并在 `estimatedFields` 里列出。
+- 监控：`vin_lookups` 表记录 provider、耗时、命中/失败与成本，不记录 VIN 明文以外的用户信息。
+- 多渠道扩展说明见 `docs/vin-providers.md`。
 
 ## 5. 风险与注意事项
 

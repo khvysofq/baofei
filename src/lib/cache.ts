@@ -48,6 +48,14 @@ export async function cacheSet(
   }
 }
 
+export async function cacheDelete(name: string): Promise<void> {
+  try {
+    await getRedis().del(fullKey(name));
+  } catch {
+    // 缓存是可选加速层，删除失败不影响业务
+  }
+}
+
 export async function cacheDeleteByPrefix(namePrefix: string): Promise<void> {
   try {
     const redis = getRedis();
