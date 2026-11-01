@@ -54,7 +54,7 @@ export function ReportView({
   const fixedDeductionFen = Math.max(0, report.deductionsFen - report.towingFen);
 
   return (
-    <section id="report" className="scroll-mt-20">
+    <section id="report" className="scroll-mt-20 pb-24 print:pb-0 sm:pb-28">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line-strong pb-4">
         <div>
           <p className="label text-rust">VALUATION REPORT · 残值评估报告</p>
@@ -443,6 +443,33 @@ export function ReportView({
             ? `车辆档案来自${report.dataSource.providerLabel}实时查询；残值由内置规则引擎测算，用于演示“输入 VIN → 残值报告”的产品形态，不构成实际收购报价。实际办理以《报废机动车回收管理办法》及回收企业现场验车结果为准。`
             : "本报告由内置规则引擎生成，用于演示“输入 VIN 或上传行驶证 → 残值报告”的产品形态，不构成实际收购报价。车辆信息为演示数据。实际办理以《报废机动车回收管理办法》及回收企业现场验车结果为准。"}
         </p>
+      </div>
+
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line-strong bg-panel/95 backdrop-blur print:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-live="polite"
+      >
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 sm:py-3">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.08em] text-dim">
+              <span className="lamp breathe text-brand" aria-hidden />
+              当前评估价
+            </p>
+            <p className="mt-0.5 truncate text-[11px] text-dim">
+              {needTowing ? "含拖运上门" : "自行送车"} ·{" "}
+              {wheelType === "alloy" ? "铝合金轮毂" : "铁轮毂"}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="mono text-2xl font-black leading-tight tracking-tight sm:text-[28px]">
+              ¥{formatYuan(netMid)}
+            </p>
+            <p className="mono text-[10px] text-dim">
+              区间 ¥{formatYuan(netLow)}–¥{formatYuan(netHigh)}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl bg-brand text-white">
