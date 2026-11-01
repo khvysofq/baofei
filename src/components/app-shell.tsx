@@ -6,7 +6,7 @@ import { CaseProvider, useCase } from "@/components/case-provider";
 import { DemoDrawer } from "@/components/demo-drawer";
 
 const NAV = [
-  { href: "/start", label: "首页", mono: "HOME" },
+  { href: "/", label: "首页", mono: "HOME" },
   { href: "/case", label: "我的办理", mono: "CASE" },
   { href: "/case#help", label: "帮助", mono: "HELP" },
 ];
@@ -38,9 +38,9 @@ function SideNav() {
   const { snapshot, loading } = useCase();
   return (
     <aside className="sticky top-0 hidden h-dvh w-[220px] shrink-0 border-r border-line px-4 py-6 lg:block">
-      <Link href="/start" className="block">
-        <p className="label text-rust">SICHUAN · SCRAP ASSIST</p>
-        <p className="mt-1 text-2xl font-black tracking-tight">报废助手</p>
+      <Link href="/" className="block">
+        <p className="label text-rust">SICHUAN · SCRAP VALUE</p>
+        <p className="mt-1 text-xl font-black tracking-tight">报废残值评估</p>
         <p className="mono mt-1 text-[11px] text-dim">V1.1</p>
         <p className="mono mt-2 text-[10px] tracking-[0.08em] text-dim">
           {snapshot?.case.caseNo ?? "未登记案件"}
@@ -97,8 +97,8 @@ function MobileHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-void/95 px-3 py-2 lg:hidden">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/start" className="flex items-baseline gap-2">
-          <span className="text-lg font-black tracking-tight">报废助手</span>
+        <Link href="/" className="flex items-baseline gap-2">
+          <span className="text-lg font-black tracking-tight">报废残值评估</span>
           <span className="mono text-[10px] text-dim">四川</span>
         </Link>
         <span className="mono truncate text-[10px] tracking-[0.08em] text-dim">

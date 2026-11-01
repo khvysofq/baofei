@@ -1,32 +1,12 @@
 import type { Metadata } from "next";
-import { ClosingCta } from "@/components/landing/closing-cta";
-import { Hero } from "@/components/landing/hero";
-import { HowItWorks } from "@/components/landing/how-it-works";
-import { MoneySection } from "@/components/landing/money";
-import { Problems } from "@/components/landing/problems";
-import { ScopeSection } from "@/components/landing/scope";
-import { SiteFooter } from "@/components/landing/site-footer";
-import { SiteHeader } from "@/components/landing/site-header";
+import { ValuationApp } from "@/components/valuation/valuation-app";
 
 export const metadata: Metadata = {
-  title: "报废助手 · 四川汽车报废办理",
+  title: "报废残值评估 · 上传行驶证，30 秒看报废值多少",
   description:
-    "用一段日常描述开始：整理办理计划、要准备的材料、两份合作方报价，以及每个阶段该看哪张凭证。",
+    "上传一张行驶证照片，自动识别车型、排量与车龄，按四川地区回收行情拆解废钢、三元催化、有色金属等残值，生成可参考的报废价格评估报告。",
 };
 
 export default function Home() {
-  return (
-    <>
-      <SiteHeader />
-      <main id="main">
-        <Hero />
-        <Problems />
-        <HowItWorks />
-        <MoneySection />
-        <ScopeSection />
-        <ClosingCta />
-      </main>
-      <SiteFooter />
-    </>
-  );
+  return <ValuationApp />;
 }

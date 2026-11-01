@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" viewBox="0 0 1000 640" role="img" aria-label="示例机动车行驶证">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffef8"/>
+      <stop offset="0.55" stop-color="#fdfbf0"/>
+      <stop offset="1" stop-color="#f7f4e6"/>
+    </linearGradient>
+    <pattern id="guilloche" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">
+      <path d="M0 9 Q4.5 3 9 9 T18 9" fill="none" stroke="#0f6b57" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+    <pattern id="micro" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.7" fill="#c2410c" fill-opacity="0.07"/>
+    </pattern>
+  </defs>
+
+  <rect width="1000" height="640" fill="#e7eae4"/>
+  <rect x="44" y="44" width="912" height="552" rx="10" fill="url(#paper)" stroke="#cfd6cf" stroke-width="2"/>
+  <rect x="60" y="60" width="880" height="520" rx="6" fill="url(#guilloche)" stroke="#0f6b57" stroke-opacity="0.28" stroke-width="1.5"/>
+  <rect x="66" y="66" width="868" height="508" rx="4" fill="url(#micro)"/>
+
+  <text x="500" y="126" text-anchor="middle" font-family="'Noto Serif SC','Songti SC',serif" font-size="34" font-weight="700" fill="#8f1d18" letter-spacing="6">中华人民共和国机动车行驶证</text>
+  <text x="500" y="152" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="11" fill="#5c6663" letter-spacing="5">MOTOR VEHICLE DRIVING LICENSE · SAMPLE</text>
+  <line x1="110" y1="170" x2="890" y2="170" stroke="#8f1d18" stroke-opacity="0.35" stroke-width="1"/>
+
+  <g font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif">
+    <g font-size="13" fill="#6b7470">
+      <text x="110" y="208">号牌号码</text>
+      <text x="110" y="258">车辆类型</text>
+      <text x="110" y="308">所有人</text>
+      <text x="110" y="358">住址</text>
+      <text x="110" y="408">使用性质</text>
+      <text x="110" y="458">品牌型号</text>
+      <text x="110" y="508">车辆识别代号</text>
+      <text x="110" y="552">发动机号码</text>
+
+      <text x="540" y="208">注册日期</text>
+      <text x="540" y="258">发证日期</text>
+      <text x="540" y="308">核定载人数</text>
+      <text x="540" y="358">整备质量</text>
+      <text x="540" y="408">总质量</text>
+      <text x="540" y="458">外廓尺寸</text>
+      <text x="540" y="508">排量 / 功率</text>
+      <text x="540" y="552">燃料种类 · 排放标准</text>
+    </g>
+
+    <g font-size="17" font-weight="600" fill="#1c2422">
+      <text x="196" y="208" font-family="'Geist Mono',monospace" letter-spacing="1">川A·8K3L9</text>
+      <text x="196" y="258">小型轿车</text>
+      <text x="196" y="308">成都三合物流有限公司</text>
+      <text x="196" y="358" font-size="14">四川省成都市武侯区武科东四路 18 号</text>
+      <text x="196" y="408">非营运</text>
+      <text x="196" y="458">大众牌 FV7160</text>
+      <text x="196" y="508" font-family="'Geist Mono',monospace" font-size="15">LSVAA49J1C2****18</text>
+      <text x="196" y="552" font-family="'Geist Mono',monospace" font-size="15">CDF****736</text>
+
+      <text x="626" y="208" font-family="'Geist Mono',monospace">2012-06-18</text>
+      <text x="626" y="258" font-family="'Geist Mono',monospace">2012-06-21</text>
+      <text x="626" y="308">5 人</text>
+      <text x="626" y="358" font-family="'Geist Mono',monospace">1320 kg</text>
+      <text x="626" y="408" font-family="'Geist Mono',monospace">1740 kg</text>
+      <text x="626" y="458" font-family="'Geist Mono',monospace" font-size="15">4540×1780×1470 mm</text>
+      <text x="626" y="508" font-family="'Geist Mono',monospace">1598 ml / 77 kW</text>
+      <text x="626" y="552">汽油 · 国 IV</text>
+    </g>
+
+    <g stroke="#d8dcd4" stroke-width="1">
+      <line x1="110" y1="222" x2="500" y2="222"/>
+      <line x1="110" y1="272" x2="500" y2="272"/>
+      <line x1="110" y1="322" x2="500" y2="322"/>
+      <line x1="110" y1="372" x2="500" y2="372"/>
+      <line x1="110" y1="422" x2="500" y2="422"/>
+      <line x1="110" y1="472" x2="500" y2="472"/>
+      <line x1="110" y1="522" x2="500" y2="522"/>
+      <line x1="540" y1="222" x2="890" y2="222"/>
+      <line x1="540" y1="272" x2="890" y2="272"/>
+      <line x1="540" y1="322" x2="890" y2="322"/>
+      <line x1="540" y1="372" x2="890" y2="372"/>
+      <line x1="540" y1="422" x2="890" y2="422"/>
+      <line x1="540" y1="472" x2="890" y2="472"/>
+      <line x1="540" y1="522" x2="890" y2="522"/>
+    </g>
+  </g>
+
+  <g transform="translate(820 470) rotate(-14)">
+    <circle r="62" fill="none" stroke="#8f1d18" stroke-opacity="0.55" stroke-width="3"/>
+    <circle r="52" fill="none" stroke="#8f1d18" stroke-opacity="0.4" stroke-width="1"/>
+    <text y="-8" text-anchor="middle" font-family="'Noto Sans SC',sans-serif" font-size="13" font-weight="700" fill="#8f1d18" fill-opacity="0.62">产品演示</text>
+    <text y="12" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="12" fill="#8f1d18" fill-opacity="0.62" letter-spacing="2">SAMPLE</text>
+    <text y="30" text-anchor="middle" font-family="'Noto Sans SC',sans-serif" font-size="11" fill="#8f1d18" fill-opacity="0.55">非真实证件</text>
+  </g>
+
+  <g font-family="'Geist Mono',monospace" font-size="11" fill="#6b7470">
+    <text x="110" y="590">证件编号：SAMPLE-510100-0001</text>
+    <text x="890" y="590" text-anchor="end">仅用于报废残值评估产品演示</text>
+  </g>
+</svg>

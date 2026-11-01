@@ -14,29 +14,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "四川汽车报废办理助手",
+  title: "报废残值评估",
   description:
-    "在四川线上办理车辆报废：一句话说清情况，核对材料，比较回收方报价，预约交车，跟踪注销与结算进度。",
+    "上传一张行驶证照片，按四川地区回收行情拆解废钢、三元催化、有色金属等残值，生成报废价格评估报告。",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://112.119.223.47:10802"),
   openGraph: {
-    title: "四川汽车报废办理助手",
-    description: "一句话说清情况，核对材料，比较回收方报价，预约交车，跟踪注销与结算进度。",
+    title: "报废残值评估",
+    description: "上传行驶证，30 秒看清这辆车报废值多少。",
     type: "website",
-    siteName: "报废助手",
+    siteName: "报废残值评估",
     locale: "zh_CN",
     images: [
       {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "报废助手：报废一辆车，最怕的是不知道下一步",
+        alt: "报废残值评估：上传行驶证，看清报废值多少",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "四川汽车报废办理助手",
-    description: "用一段日常描述开始，理清办理计划、材料、报价与四条办理状态。",
+    title: "报废残值评估",
+    description: "上传行驶证，自动拆解残值并生成评估报告。",
     images: ["/og.png"],
   },
 };
