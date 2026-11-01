@@ -10,6 +10,10 @@ const TONE_DOT: Record<string, string> = {
   flat: "bg-line-strong",
 };
 
+function roundToYuan(fen: number): number {
+  return Math.round(fen / 1000) * 1000;
+}
+
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("zh-CN", {
     timeZone: "Asia/Shanghai",
@@ -39,11 +43,14 @@ export function ReportView({
   onReset: () => void;
 }) {
   const [needTowing, setNeedTowing] = useState(true);
+  const [wheelType, setWheelType] = useState<"alloy" | "steel">("alloy");
   const maxFen = Math.max(...report.items.map((item) => item.amountFen));
   const { profile } = report;
-  const netLow = needTowing ? report.netLowFen : report.netLowNoTowingFen;
-  const netMid = needTowing ? report.netMidFen : report.netMidNoTowingFen;
-  const netHigh = needTowing ? report.netHighFen : report.netHighNoTowingFen;
+  const baseMid = needTowing ? report.netMidFen : report.netMidNoTowingFen;
+  const wheelDeductionFen = wheelType === "steel" ? report.ironWheelDeductionFen : 0;
+  const netMid = roundToYuan(baseMid - wheelDeductionFen);
+  const netLow = roundToYuan(netMid * 0.94);
+  const netHigh = roundToYuan(netMid * 1.08);
   const fixedDeductionFen = Math.max(0, report.deductionsFen - report.towingFen);
 
   return (
@@ -98,7 +105,8 @@ export function ReportView({
             className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10"
           />
           <p className="label">
-            综合残值区间 · {needTowing ? "含拖运上门" : "自行送车"}
+            综合残值区间 · {needTowing ? "含拖运上门" : "自行送车"} ·{" "}
+            {wheelType === "alloy" ? "铝合金轮毂" : "铁轮毂"}
           </p>
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-text">
             <span className="mono text-3xl font-black sm:text-4xl">
@@ -131,6 +139,14 @@ export function ReportView({
                 <dt className="text-dim">拖运与上门服务</dt>
                 <dd className="mono font-semibold text-rust">
                   −¥{formatYuan(report.towingFen)}
+                </dd>
+              </div>
+            ) : null}
+            {wheelType === "steel" ? (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-dim">铁轮毂差价（400 元/吨）</dt>
+                <dd className="mono font-semibold text-rust">
+                  −¥{formatYuan(report.ironWheelDeductionFen)}
                 </dd>
               </div>
             ) : null}
@@ -270,8 +286,10 @@ export function ReportView({
         <div className="panel p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-black tracking-tight">拖车方式</h3>
-              <p className="mt-1 text-xs text-dim">选择后，上方残值区间会实时调整。</p>
+              <h3 className="text-lg font-black tracking-tight">报价选项</h3>
+              <p className="mt-1 text-xs text-dim">
+                选择拖车方式与轮毂材质，上方残值区间会实时调整。
+              </p>
             </div>
             <span className="tag shrink-0 text-brand">影响报价</span>
           </div>
@@ -332,6 +350,71 @@ export function ReportView({
                 自己送到回收网点，评估价增加 ¥{formatYuan(report.towingFen)}
               </span>
             </button>
+          </div>
+          <div className="mt-4 border-t border-line pt-3">
+            <p className="text-sm font-bold">轮毂材质</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="轮毂材质">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={wheelType === "alloy"}
+                onClick={() => setWheelType("alloy")}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  wheelType === "alloy"
+                    ? "border-brand bg-brand-soft"
+                    : "border-line hover:border-line-strong"
+                }`}
+              >
+                <span className="flex items-center gap-2 text-sm font-bold">
+                  <span
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
+                      wheelType === "alloy"
+                        ? "border-brand bg-brand text-white"
+                        : "border-line-strong text-transparent"
+                    }`}
+                    aria-hidden
+                  >
+                    ✓
+                  </span>
+                  铝合金轮毂（默认）
+                </span>
+                <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
+                  按当前评估价计价
+                </span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={wheelType === "steel"}
+                onClick={() => setWheelType("steel")}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  wheelType === "steel"
+                    ? "border-brand bg-brand-soft"
+                    : "border-line hover:border-line-strong"
+                }`}
+              >
+                <span className="flex items-center gap-2 text-sm font-bold">
+                  <span
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
+                      wheelType === "steel"
+                        ? "border-brand bg-brand text-white"
+                        : "border-line-strong text-transparent"
+                    }`}
+                    aria-hidden
+                  >
+                    ✓
+                  </span>
+                  铁轮毂
+                </span>
+                <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
+                  按整备质量每吨减 400 元，本车约少 ¥{formatYuan(report.ironWheelDeductionFen)}
+                </span>
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-dim">
+              轮毂差价 = 整备质量 {(report.profile.curbWeightKg / 1000).toFixed(2)} 吨 × 400 元/吨；
+              最终以现场验车确认的轮毂材质为准。
+            </p>
           </div>
           <p className="mt-3 text-[11px] leading-relaxed text-dim">
             拖运费按成都绕城内测算；自行送车前请先与回收企业确认网点地址与接收时间。

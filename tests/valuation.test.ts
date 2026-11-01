@@ -82,6 +82,15 @@ describe("报废残值评估引擎", () => {
     ).toBeLessThanOrEqual(1000);
   });
 
+  it("铁轮毂按整备质量每吨减 400 元", () => {
+    const report = buildValuationReport({ seed: "a".repeat(64), now: NOW });
+
+    expect(report.ironWheelDeductionFen).toBe(
+      Math.round(40 * report.profile.curbWeightKg),
+    );
+    expect(report.ironWheelDeductionFen).toBeGreaterThan(0);
+  });
+
   it("同一份文件摘要得到同一份报告，编号稳定", () => {
     const seed = "0123456789abcdef".repeat(4);
     const first = buildValuationReport({ seed, now: NOW });

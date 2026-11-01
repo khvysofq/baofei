@@ -90,6 +90,8 @@ export type ValuationReport = {
   deductionsFen: number;
   /** 拖运上门费用，用户选择自行送车时从净额中加回。 */
   towingFen: number;
+  /** 铁轮毂相对铝合金轮毂的差价（按整备质量 × 400 元/吨），默认铝合金时为 0 扣减。 */
+  ironWheelDeductionFen: number;
   netLowFen: number;
   netMidFen: number;
   netHighFen: number;
@@ -714,6 +716,9 @@ export function buildValuationReport(options: {
   const netLowNoTowingFen = roundToYuan(netMidNoTowingFen * 0.94);
   const netHighNoTowingFen = roundToYuan(netMidNoTowingFen * 1.08);
 
+  // 铝合金轮毂为默认口径；铁轮毂按整备质量每吨减 400 元。
+  const ironWheelDeductionFen = Math.round(40 * profile.curbWeightKg);
+
   const stamp = now.toISOString().slice(0, 10).replace(/-/g, "");
   const validUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -848,6 +853,7 @@ export function buildValuationReport(options: {
     deductions,
     deductionsFen,
     towingFen: basis.towingFen,
+    ironWheelDeductionFen,
     netLowFen,
     netMidFen,
     netHighFen,
