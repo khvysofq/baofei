@@ -265,6 +265,32 @@ export function ReportView({
           及回收企业现场验车结果为准。
         </p>
       </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl bg-brand text-white">
+        <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <p className="mono text-[10px] tracking-[0.16em] text-white/70">
+              办理推荐联系人
+            </p>
+            <p className="mt-1 text-xl font-black tracking-tight">何先生</p>
+            <p className="mt-1 text-sm text-white/80">报废回收 · 上门验车 · 手续代办</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <a
+              href="tel:15828996681"
+              className="mono text-2xl font-black tracking-wide hover:underline"
+            >
+              158 2899 6681
+            </a>
+            <a
+              href="tel:15828996681"
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-white px-5 text-sm font-bold text-brand transition-colors hover:bg-brand-soft sm:w-auto"
+            >
+              拨打电话
+            </a>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
