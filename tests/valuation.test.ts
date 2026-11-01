@@ -70,6 +70,18 @@ describe("报废残值评估引擎", () => {
     expect(report.netLowFen).toBeLessThan(report.netMidFen);
   });
 
+  it("自行送车时不计拖运费，区间整体上移", () => {
+    const report = buildValuationReport({ seed: "a".repeat(64), now: NOW });
+
+    expect(report.towingFen).toBeGreaterThan(0);
+    expect(report.netMidNoTowingFen).toBeGreaterThan(report.netMidFen);
+    expect(report.netLowNoTowingFen).toBeLessThan(report.netMidNoTowingFen);
+    expect(report.netHighNoTowingFen).toBeGreaterThan(report.netMidNoTowingFen);
+    expect(
+      Math.abs(report.netMidNoTowingFen - report.netMidFen - report.towingFen),
+    ).toBeLessThanOrEqual(1000);
+  });
+
   it("同一份文件摘要得到同一份报告，编号稳定", () => {
     const seed = "0123456789abcdef".repeat(4);
     const first = buildValuationReport({ seed, now: NOW });

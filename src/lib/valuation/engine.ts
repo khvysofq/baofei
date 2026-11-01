@@ -88,9 +88,15 @@ export type ValuationReport = {
   grossFen: number;
   deductions: DeductionItem[];
   deductionsFen: number;
+  /** 拖运上门费用，用户选择自行送车时从净额中加回。 */
+  towingFen: number;
   netLowFen: number;
   netMidFen: number;
   netHighFen: number;
+  /** 自行送车（不使用拖运）对应的区间。 */
+  netLowNoTowingFen: number;
+  netMidNoTowingFen: number;
+  netHighNoTowingFen: number;
   confidence: { level: string; note: string };
   factors: PriceFactor[];
   suggestions: string[];
@@ -703,6 +709,11 @@ export function buildValuationReport(options: {
   const netLowFen = roundToYuan(netMidFen * 0.94);
   const netHighFen = roundToYuan(netMidFen * 1.08);
 
+  // 自行送车：在含拖运净额上加回拖运费，用户实得差额即拖运费。
+  const netMidNoTowingFen = roundToYuan(netMidFen + basis.towingFen);
+  const netLowNoTowingFen = roundToYuan(netMidNoTowingFen * 0.94);
+  const netHighNoTowingFen = roundToYuan(netMidNoTowingFen * 1.08);
+
   const stamp = now.toISOString().slice(0, 10).replace(/-/g, "");
   const validUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -836,9 +847,13 @@ export function buildValuationReport(options: {
     grossFen,
     deductions,
     deductionsFen,
+    towingFen: basis.towingFen,
     netLowFen,
     netMidFen,
     netHighFen,
+    netLowNoTowingFen,
+    netMidNoTowingFen,
+    netHighNoTowingFen,
     confidence: { level: confidenceLevel, note: confidenceNote },
     factors,
     suggestions: [

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { formatYuan } from "@/lib/domain/money";
 import type { ValuationReport } from "@/lib/valuation/engine";
 
@@ -37,8 +38,13 @@ export function ReportView({
   report: ValuationReport;
   onReset: () => void;
 }) {
+  const [needTowing, setNeedTowing] = useState(true);
   const maxFen = Math.max(...report.items.map((item) => item.amountFen));
   const { profile } = report;
+  const netLow = needTowing ? report.netLowFen : report.netLowNoTowingFen;
+  const netMid = needTowing ? report.netMidFen : report.netMidNoTowingFen;
+  const netHigh = needTowing ? report.netHighFen : report.netHighNoTowingFen;
+  const fixedDeductionFen = Math.max(0, report.deductionsFen - report.towingFen);
 
   return (
     <section id="report" className="scroll-mt-20">
@@ -91,20 +97,22 @@ export function ReportView({
             aria-hidden
             className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10"
           />
-          <p className="label">综合残值区间 · 参考中值</p>
+          <p className="label">
+            综合残值区间 · {needTowing ? "含拖运上门" : "自行送车"}
+          </p>
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-text">
             <span className="mono text-3xl font-black sm:text-4xl">
-              ¥{formatYuan(report.netLowFen)}
+              ¥{formatYuan(netLow)}
             </span>
             <span className="text-dim">–</span>
             <span className="mono text-3xl font-black sm:text-4xl">
-              ¥{formatYuan(report.netHighFen)}
+              ¥{formatYuan(netHigh)}
             </span>
           </p>
           <p className="mt-2 text-sm text-dim">
             中值{" "}
-            <span className="mono font-bold text-brand">¥{formatYuan(report.netMidFen)}</span>
-            ，已扣除拆解与拖运成本
+            <span className="mono font-bold text-brand">¥{formatYuan(netMid)}</span>
+            ，已扣除拆解{needTowing ? "与拖运" : ""}成本
           </p>
 
           <dl className="mt-5 space-y-2 border-t border-line pt-4 text-sm">
@@ -113,11 +121,19 @@ export function ReportView({
               <dd className="mono font-semibold">¥{formatYuan(report.grossFen)}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-dim">成本扣减</dt>
+              <dt className="text-dim">拆解与环保处置</dt>
               <dd className="mono font-semibold text-rust">
-                −¥{formatYuan(report.deductionsFen)}
+                −¥{formatYuan(fixedDeductionFen)}
               </dd>
             </div>
+            {needTowing ? (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-dim">拖运与上门服务</dt>
+                <dd className="mono font-semibold text-rust">
+                  −¥{formatYuan(report.towingFen)}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between gap-3">
               <dt className="text-dim">车况修正（{report.condition}）</dt>
               <dd className="mono font-semibold">
@@ -252,22 +268,73 @@ export function ReportView({
 
       <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="panel p-5 sm:p-6">
-          <h3 className="text-lg font-black tracking-tight">成本扣减明细</h3>
-          <ul className="mt-3 divide-y divide-line">
-            {report.deductions.map((item) => (
-              <li key={item.label} className="flex items-baseline justify-between gap-3 py-2.5">
-                <div>
-                  <p className="text-sm font-semibold">{item.label}</p>
-                  <p className="text-[11px] text-dim">{item.basis}</p>
-                </div>
-                <p className="mono shrink-0 text-sm font-semibold text-rust">
-                  −¥{formatYuan(item.amountFen)}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-black tracking-tight">拖车方式</h3>
+              <p className="mt-1 text-xs text-dim">选择后，上方残值区间会实时调整。</p>
+            </div>
+            <span className="tag shrink-0 text-brand">影响报价</span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="是否需要拖车上门">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={needTowing}
+              onClick={() => setNeedTowing(true)}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                needTowing
+                  ? "border-brand bg-brand-soft"
+                  : "border-line hover:border-line-strong"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm font-bold">
+                <span
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
+                    needTowing
+                      ? "border-brand bg-brand text-white"
+                      : "border-line-strong text-transparent"
+                  }`}
+                  aria-hidden
+                >
+                  ✓
+                </span>
+                需要拖车上门
+              </span>
+              <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
+                回收企业上门拖车，费用 ¥{formatYuan(report.towingFen)} 已计入区间
+              </span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!needTowing}
+              onClick={() => setNeedTowing(false)}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                !needTowing
+                  ? "border-brand bg-brand-soft"
+                  : "border-line hover:border-line-strong"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm font-bold">
+                <span
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
+                    !needTowing
+                      ? "border-brand bg-brand text-white"
+                      : "border-line-strong text-transparent"
+                  }`}
+                  aria-hidden
+                >
+                  ✓
+                </span>
+                不需要，自行送车
+              </span>
+              <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
+                自己送到回收网点，评估价增加 ¥{formatYuan(report.towingFen)}
+              </span>
+            </button>
+          </div>
           <p className="mt-3 text-[11px] leading-relaxed text-dim">
-            自行送车到回收网点可减免拖运费；具体以回收企业确认为准。
+            拖运费按成都绕城内测算；自行送车前请先与回收企业确认网点地址与接收时间。
           </p>
         </div>
 
