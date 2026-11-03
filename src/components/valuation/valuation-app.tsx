@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReportView } from "@/components/valuation/report-view";
 import type { VinQuoteReport } from "@/lib/valuation/pricing";
@@ -202,10 +201,7 @@ export function ValuationApp() {
                 />
                 <div id="vin-hint" className="mt-2 flex items-center justify-between gap-2 text-xs">
                   <span className="text-dim">
-                    17 位，不含 I / O / Q，第 9 位为校验位 ·{" "}
-                    <Link href="/vin-help" className="font-semibold text-brand underline decoration-brand/40 underline-offset-4">
-                      找不到 VIN？看这里
-                    </Link>
+                    17 位，不含 I / O / Q，第 9 位为校验位
                   </span>
                   <span
                     className={`mono tabular ${
@@ -216,10 +212,27 @@ export function ValuationApp() {
                   </span>
                 </div>
 
-                <div className="mt-3 rounded-lg bg-raise/70 px-3 py-2 text-[11px] leading-relaxed text-dim">
-                  在行驶证「车辆识别代号」栏、前挡风玻璃左下角或机动车登记证书上可以找到。
-                  也可以直接点下方示例 VIN 体验。
-                </div>
+                <details className="mt-3 rounded-lg border border-line bg-raise/70">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between px-3 text-xs font-semibold text-brand [&::-webkit-details-marker]:hidden">
+                    VIN 在哪里看？
+                    <span aria-hidden className="mono text-[10px] text-dim">
+                      +
+                    </span>
+                  </summary>
+                  <div className="space-y-2 border-t border-line px-3 py-2.5 text-[11px] leading-relaxed text-dim">
+                    <ul className="space-y-1">
+                      <li>行驶证「车辆识别代号」栏</li>
+                      <li>前挡风玻璃左下角（从车外看）</li>
+                      <li>机动车登记证书（绿本）</li>
+                    </ul>
+                    <p>
+                      共 17 位，只含数字和大写字母，不含 I / O / Q；第 9 位是校验位。
+                      示例：
+                      <span className="mono text-text">{EXAMPLE_VIN}</span>
+                    </p>
+                  </div>
+                </details>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -235,12 +248,6 @@ export function ValuationApp() {
               {error ? (
                 <div role="alert" className="mt-3 rounded-lg bg-danger/8 px-3 py-2 text-xs text-danger">
                   <p>{error}</p>
-                  <Link
-                    href="/vin-help"
-                    className="mt-1 inline-block font-semibold underline decoration-danger/40 underline-offset-4"
-                  >
-                    核对 VIN 位置与写法 →
-                  </Link>
                 </div>
               ) : null}
 

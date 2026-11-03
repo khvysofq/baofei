@@ -102,7 +102,16 @@ function DeductionChip({
         <div className="min-w-0">
           <p className="text-sm font-semibold break-words">{item.name}</p>
           <p className="mono mt-0.5 text-[11px] text-dim">
-            每个 ¥{formatYuan(item.fen)} / {item.unit}
+            缺失少算 ¥{formatYuan(item.fen)} / {item.unit}
+          </p>
+          <p
+            className={`mono mt-0.5 text-[11px] ${
+              qty > 0 ? "text-rust" : "text-dim"
+            }`}
+          >
+            {qty > 0
+              ? `已选 ${qty}${item.unit} · 少算 ¥${formatYuan(item.fen * qty)}`
+              : "当前在车"}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -163,6 +172,19 @@ export function ReportView({
       ? Math.round((pricing.steelRimDiscountFenPerTon * vehicle.weightKg) / 1000)
       : null;
   const steelAvailable = quote.category === "sedan_suv";
+
+  const missingLines = quote.deductionLines.filter(
+    (line) => line.kind === "missing" && line.amountFen > 0,
+  );
+  const missingFen = missingLines.reduce((sum, line) => sum + line.amountFen, 0);
+  const serviceLines = quote.deductionLines.filter(
+    (line) => line.kind === "tow" || line.kind === "service",
+  );
+  const serviceFen = serviceLines.reduce((sum, line) => sum + line.amountFen, 0);
+  const vehicleZoneFen =
+    quote.vehicleSubtotalFen === null
+      ? null
+      : Math.max(0, quote.vehicleSubtotalFen - missingFen);
 
   const update = (patch: Partial<QuoteOptions>) => {
     setOptions((current) => ({ ...current, ...patch }));
@@ -260,8 +282,8 @@ export function ReportView({
               ) : null}
             </p>
           </div>
-          <a href="#quote-options" className="btn-secondary text-sm no-print">
-            调整报价选项
+          <a href="#pricing-controls" className="btn-secondary text-sm no-print">
+            调整车值与服务费
           </a>
         </div>
 
@@ -317,17 +339,24 @@ export function ReportView({
         </dl>
       </div>
 
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-        {/* ③ A 区 · 车值 */}
+<div
+        id="pricing-controls"
+        className="mt-5 grid scroll-mt-24 items-start gap-5 lg:grid-cols-[1.08fr_0.92fr]"
+      >
+        {/* ③ 车值（可调整） */}
         <div className="panel p-5 sm:p-6">
           <div className="flex items-baseline justify-between gap-2">
-            <h3 className="text-lg font-black tracking-tight">A 区 · 车值</h3>
-            <span className="mono text-[11px] text-dim">单位：元</span>
+            <h3 className="text-lg font-black tracking-tight">车值</h3>
+            <span className="tag shrink-0 text-brand">可调整 · 元</span>
           </div>
-          <div className="mt-2">
+          <p className="mt-1 text-xs text-dim">
+            吨价车值与缺件少算都计入车值小计，不含拖运和服务费。
+          </p>
+
+          <div className="mt-3">
             {quote.baseValueFen !== null ? (
               <LineRow
-                label={quote.pricingMode === "unit" ? "按辆收购价" : "吨价车值"}
+                label={quote.pricingMode === "unit" ? "整车基价（按辆）" : "整车基价（按吨）"}
                 detail={
                   quote.pricingMode === "unit"
                     ? `${quote.categoryLabel} · 按辆计价`
@@ -339,7 +368,7 @@ export function ReportView({
               />
             ) : (
               <LineRow
-                label="吨价车值"
+                label="整车基价"
                 detail="整备质量缺失，需地磅称重后才能计算"
                 amountFen={null}
                 tone="pending"
@@ -357,70 +386,13 @@ export function ReportView({
               />
             ) : null}
           </div>
-          <div className="mt-3 flex items-baseline justify-between border-t border-line-strong pt-3">
-            <p className="text-sm font-bold">A 区小计</p>
-            <p className="mono text-lg font-black">
-              {yuan(quote.vehicleSubtotalFen)}
-            </p>
-          </div>
           <p className="mt-2 text-[11px] leading-relaxed text-dim">
-            车值 = 吨价 × 整备质量 ÷ 1000。未验车，车况、事故与拆散情况都会影响最终结算。
+            {quote.pricingMode === "unit"
+              ? "按辆计价：整车基价 = 该车型按辆收购价。"
+              : "整车基价 = 吨价 × 整备质量 ÷ 1000。未验车，车况与拆散情况以现场为准。"}
           </p>
-        </div>
 
-        {/* ④ B 区 · 扣减 */}
-        <div className="panel p-5 sm:p-6">
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 className="text-lg font-black tracking-tight">B 区 · 扣减</h3>
-            <span className="mono text-[11px] text-dim">单位：元</span>
-          </div>
-          <div className="mt-2">
-            {quote.deductionLines.map((line) => (
-              <LineRow
-                key={`${line.kind}-${line.code ?? line.label}`}
-                label={line.label}
-                detail={line.detail}
-                amountFen={line.amountFen}
-                tone={
-                  line.kind === "reserved"
-                    ? "pending"
-                    : line.amountFen > 0
-                      ? "deduct"
-                      : "plain"
-                }
-                pending={line.kind === "reserved"}
-              />
-            ))}
-          </div>
-          <div className="mt-3 flex items-baseline justify-between border-t border-line-strong pt-3">
-            <p className="text-sm font-bold">已知扣减合计</p>
-            <p className="mono text-lg font-black text-rust">
-              −¥{formatYuan(quote.knownDeductionsFen)}
-            </p>
-          </div>
-          {!options.partsConfirmed ? (
-            <p className="mt-2 text-[11px] leading-relaxed text-warn">
-              缺件未核对：低价端另预留 ¥{formatYuan(quote.reservedMissingFen)}，
-              现场核对后多退少补，不并入已知扣减。
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      {/* ⑤ 选项面板 */}
-      <div id="quote-options" className="panel mt-5 scroll-mt-24 p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="text-lg font-black tracking-tight">报价选项</h3>
-            <p className="mt-1 text-xs text-dim">
-              切换轮毂、拖运方式与缺件，上方区间即时重算，不额外请求接口。
-            </p>
-          </div>
-          <span className="tag shrink-0 text-brand">影响报价</span>
-        </div>
-
-        <div className="mt-4 grid gap-5 lg:grid-cols-2">
-          <div>
+          <div className="mt-4 border-t border-line pt-4">
             <p className="text-sm font-bold">轮毂材质</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="轮毂材质">
               <button
@@ -446,12 +418,13 @@ export function ReportView({
                 type="button"
                 role="radio"
                 aria-checked={options.wheelType === "steel"}
+                disabled={!steelAvailable}
                 onClick={() => update({ wheelType: "steel" })}
                 className={`rounded-xl border p-3 text-left transition-colors ${
                   options.wheelType === "steel"
                     ? "border-brand bg-brand-soft"
                     : "border-line hover:border-line-strong"
-                }`}
+                } ${steelAvailable ? "" : "cursor-not-allowed opacity-60"}`}
               >
                 <span className="flex items-center gap-2 text-sm font-bold">铁轮毂</span>
                 <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
@@ -469,7 +442,71 @@ export function ReportView({
             </div>
           </div>
 
-          <div>
+          <div className="mt-4 border-t border-line pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold">部件状态</p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-dim">
+                  默认 0 个缺失，即全部在车。按实际缺件调整，车值小计即时重算。
+                </p>
+              </div>
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={options.partsConfirmed}
+                  onChange={(event) =>
+                    update({
+                      partsConfirmed: event.target.checked,
+                      missingParts: event.target.checked ? {} : options.missingParts,
+                    })
+                  }
+                  className="h-4 w-4 accent-[var(--color-brand)]"
+                />
+                主要部件齐全（确认无缺件）
+              </label>
+            </div>
+
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {catalog.map((item) => (
+                <DeductionChip
+                  key={item.code}
+                  item={item}
+                  qty={options.missingParts[item.code] ?? 0}
+                  disabled={options.partsConfirmed}
+                  onChange={(qty) => setPartQty(item.code, qty)}
+                />
+              ))}
+            </ul>
+            {options.partsConfirmed ? (
+              <p className="mt-2 text-[11px] text-dim">
+                已确认主要部件齐全，缺件选择已清空，低价端不再预留缺件扣款。
+              </p>
+            ) : null}
+          </div>
+
+          <div className="mt-3 flex items-baseline justify-between border-t border-line-strong pt-3">
+            <p className="text-sm font-bold">车值小计</p>
+            <p className="mono text-lg font-black">{yuan(vehicleZoneFen)}</p>
+          </div>
+          {!options.partsConfirmed ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-warn">
+              缺件未核对，低价端另预留 ¥{formatYuan(quote.reservedMissingFen)}
+              （已计入区间低价端，不从车值小计再扣一次）。
+            </p>
+          ) : null}
+        </div>
+
+        {/* ④ 服务费 */}
+        <div className="panel p-5 sm:p-6">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-lg font-black tracking-tight">服务费</h3>
+            <span className="tag shrink-0">与车值分开</span>
+          </div>
+          <p className="mt-1 text-xs text-dim">
+            拖运与服务费单独计算，从车值小计中扣除，不改变车值。
+          </p>
+
+          <div className="mt-4">
             <p className="text-sm font-bold">拖运方式</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="拖运方式">
               <button
@@ -529,49 +566,59 @@ export function ReportView({
               不填按免费里程内计算；超出部分才另计拖运费。
             </p>
           </div>
-        </div>
 
-        <div className="mt-5 border-t border-line pt-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold">缺件</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-dim">
-                按价目表逐项扣减。未核对时低价端会预留缺件扣款。
-              </p>
-            </div>
-            <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold">
-              <input
-                type="checkbox"
-                checked={options.partsConfirmed}
-                onChange={(event) =>
-                  update({
-                    partsConfirmed: event.target.checked,
-                    missingParts: event.target.checked ? {} : options.missingParts,
-                  })
-                }
-                className="h-4 w-4 accent-[var(--color-brand)]"
-              />
-              主要部件齐全（确认无缺件）
-            </label>
-          </div>
-
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {catalog.map((item) => (
-              <DeductionChip
-                key={item.code}
-                item={item}
-                qty={options.missingParts[item.code] ?? 0}
-                disabled={options.partsConfirmed}
-                onChange={(qty) => setPartQty(item.code, qty)}
+          <div className="mt-4 border-t border-line pt-2">
+            {serviceLines.map((line) => (
+              <LineRow
+                key={`${line.kind}-${line.code ?? line.label}`}
+                label={line.label}
+                detail={line.detail}
+                amountFen={line.amountFen}
+                tone={line.amountFen > 0 ? "deduct" : "plain"}
               />
             ))}
-          </ul>
-          {options.partsConfirmed ? (
-            <p className="mt-2 text-[11px] text-dim">
-              已确认主要部件齐全，缺件选择已清空，低价端不再预留缺件扣款。
+          </div>
+          <div className="mt-3 flex items-baseline justify-between border-t border-line-strong pt-3">
+            <p className="text-sm font-bold">服务费小计</p>
+            <p className="mono text-lg font-black text-rust">
+              −¥{formatYuan(serviceFen)}
             </p>
-          ) : null}
+          </div>
         </div>
+      </div>
+
+      {/* ⑤ 合计 */}
+      <div className="panel-strong mt-5 p-5 sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <p className="label text-rust">预计到手</p>
+            <p className="mt-1 text-sm text-dim">车值小计 − 服务费小计，与上方区间中值一致。</p>
+          </div>
+          <p className="mono text-2xl font-black text-brand">
+            {quote.netFen === null ? "待称重" : `¥${formatYuan(quote.netFen)}`}
+          </p>
+        </div>
+        <div className="mono mt-3 grid gap-2 text-sm sm:grid-cols-3">
+          <div className="rounded-lg bg-raise/70 px-3 py-2">
+            <p className="text-[10px] tracking-[0.1em] text-dim">车值小计</p>
+            <p className="mt-0.5 font-bold">{yuan(vehicleZoneFen)}</p>
+          </div>
+          <div className="rounded-lg bg-raise/70 px-3 py-2">
+            <p className="text-[10px] tracking-[0.1em] text-dim">服务费小计</p>
+            <p className="mt-0.5 font-bold text-rust">−¥{formatYuan(serviceFen)}</p>
+          </div>
+          <div className="rounded-lg bg-raise/70 px-3 py-2">
+            <p className="text-[10px] tracking-[0.1em] text-dim">预计到手</p>
+            <p className="mt-0.5 font-bold text-brand">
+              {quote.netFen === null ? "待称重" : `¥${formatYuan(quote.netFen)}`}
+            </p>
+          </div>
+        </div>
+        {quote.range ? (
+          <p className="mono mt-2 text-[11px] text-dim">
+            参考区间 ¥{formatYuan(quote.range.lowFen)}–¥{formatYuan(quote.range.highFen)}
+          </p>
+        ) : null}
       </div>
 
       {/* ⑥ 待确认项 / 估算假设 */}
