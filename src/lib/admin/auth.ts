@@ -9,7 +9,7 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
-export const ADMIN_COOKIE = "baofei_admin";
+export const ADMIN_COOKIE = "baofei_guanli";
 export const ADMIN_SESSION_SECONDS = 8 * 60 * 60;
 
 export const ADMIN_SETUP_HINT = {
@@ -17,7 +17,7 @@ export const ADMIN_SETUP_HINT = {
   setup: [
     "在 .env.local 或部署环境变量中设置 ADMIN_PASSWORD",
     "可选：设置 ADMIN_SESSION_SECRET 作为独立签名密钥；未设置时使用 ADMIN_PASSWORD",
-    "重启服务后访问 /admin 登录",
+    "重启服务后访问 /guanli 登录",
   ],
 };
 

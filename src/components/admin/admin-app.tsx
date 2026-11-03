@@ -203,7 +203,7 @@ export function AdminApp() {
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/pricing", { cache: "no-store" });
+      const response = await fetch("/api/guanli/pricing", { cache: "no-store" });
       if (response.status === 503) {
         const payload = (await response.json()) as {
           error?: string;
@@ -252,7 +252,7 @@ export function AdminApp() {
     setBusy(true);
     setMessage(null);
     try {
-      const response = await fetch("/api/admin/login", {
+      const response = await fetch("/api/guanli/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
@@ -272,7 +272,7 @@ export function AdminApp() {
   };
 
   const logout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch("/api/guanli/logout", { method: "POST" });
     setActive(null);
     setDraft(null);
     setView("login");
@@ -285,7 +285,7 @@ export function AdminApp() {
     setMessage(null);
     setErrors([]);
     try {
-      const response = await fetch("/api/admin/pricing", {
+      const response = await fetch("/api/guanli/pricing", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ config: toConfig(draft) }),

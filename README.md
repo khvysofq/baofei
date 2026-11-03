@@ -22,9 +22,9 @@
 
 ## 定价后台
 
-`/admin` 是隐藏页，不在导航中。用环境变量 `ADMIN_PASSWORD` 登录；可选的
+`/guanli` 是隐藏页，不在导航中。用环境变量 `ADMIN_PASSWORD` 登录；可选的
 `ADMIN_SESSION_SECRET` 作为会话签名密钥（未设置时使用 `ADMIN_PASSWORD`）。未配置密码时，
-`/admin` 显示设置说明，`/api/admin/*` 返回 503。
+`/guanli` 显示设置说明，`/api/guanli/*` 返回 503。
 
 ```bash
 ADMIN_PASSWORD=改成你自己的密码
