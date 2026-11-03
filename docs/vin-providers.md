@@ -14,8 +14,9 @@ src/lib/vin/
     jisuepc.ts          极速车服 https://www.jisuepc.com/api/vin/
 ```
 
-估值引擎 `src/lib/valuation/engine.ts` 只接收 `VinVehicleSpec`；没有档案就走原有 WMI/年款推定，
-并把它标成 `dataSource.kind = "demo"`。
+公开报价页只接收渠道返回的 `VinVehicleSpec`（或内置示例 VIN），再交给
+`src/lib/valuation/pricing.ts` 计算参考收购价。渠道无结果或不可用时直接报错，
+不再按 WMI / 年款位编造品牌、车型与整备质量。
 
 ## 路由顺序
 
@@ -31,7 +32,7 @@ src/lib/vin/
    - 渠道报错或 `NOT_FOUND` 就切下一个渠道。
 5. 全部失败：
    - 都是 `NOT_FOUND` → 抛 `NOT_FOUND`（用户需要核对 VIN）；
-   - 其他 → 抛 `UPSTREAM_ERROR`。API 层据此决定「明确拒绝」还是「降级演示推定 + 提示」。
+   - 其他 → 抛 `UPSTREAM_ERROR`。API 层据此返回 404 / 502，并提示核对 VIN 或联系人工计价。
 
 ## 缓存边界
 
@@ -55,7 +56,8 @@ src/lib/vin/
 | `JISUEPC_BASE_URL` | `https://api.jisuepc.com` | 便于切测试环境 |
 | `JISUEPC_STRICT` | 0 | 1 = 让渠道严格校验 VIN |
 
-未配置任何渠道时，`queryVin` 抛 `NOT_CONFIGURED`，API 层降级为演示推定，页面照常出报告但会标注。
+未配置任何渠道时，`queryVin` 抛 `NOT_CONFIGURED`，公开报价接口返回 502，
+不会生成推定品牌或假重量。只有示例 VIN `LSVAA49J5C2345678` 使用内置演示车型。
 
 ## 新增一个渠道
 

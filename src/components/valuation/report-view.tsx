@@ -1,24 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { formatYuan } from "@/lib/domain/money";
-import type { ValuationReport } from "@/lib/valuation/engine";
 import {
-  ACQUISITION_PROVIDER,
-  ACQUISITION_VERSION,
-  TOW_FREE_KM,
-  quoteAcquisition,
-  resolveCategory,
-} from "@/lib/valuation/acquisition";
+  DEFAULT_QUOTE_OPTIONS,
+  computeQuote,
+  deductionScopeFor,
+  type DeductionCatalogItem,
+  type QuoteOptions,
+  type VinQuoteReport,
+  type WeightSource,
+} from "@/lib/valuation/pricing";
 
-const TONE_DOT: Record<string, string> = {
-  up: "bg-brand",
-  down: "bg-rust",
-  flat: "bg-line-strong",
+const WEIGHT_SOURCE_LABEL: Record<WeightSource, string> = {
+  vin: "VIN 档案",
+  estimated: "推定值",
+  missing: "待称重",
 };
 
-function roundToYuan(fen: number): number {
-  return Math.round(fen / 1000) * 1000;
+function yuan(fen: number | null): string {
+  return fen === null ? "待确认" : `¥${formatYuan(fen)}`;
 }
 
 function formatDateTime(iso: string): string {
@@ -42,60 +43,162 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function LineRow({
+  label,
+  detail,
+  amountFen,
+  tone = "plain",
+  pending = false,
+}: {
+  label: string;
+  detail: string;
+  amountFen: number | null;
+  tone?: "plain" | "deduct" | "pending";
+  pending?: boolean;
+}) {
+  const amountClass =
+    tone === "deduct"
+      ? "text-rust"
+      : tone === "pending"
+        ? "text-warn"
+        : "text-text";
+  const prefix = pending ? "预留 " : tone === "deduct" ? "−" : "";
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-line py-2.5 last:border-b-0">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">
+          {label}
+          {pending ? (
+            <span className="tag ml-2 align-middle text-warn">待确认</span>
+          ) : null}
+        </p>
+        <p className="mt-0.5 text-[11px] leading-snug text-dim">{detail}</p>
+      </div>
+      <p className={`mono shrink-0 text-sm font-bold ${amountClass}`}>
+        {amountFen === null ? "待确认" : `${prefix}¥${formatYuan(amountFen)}`}
+      </p>
+    </div>
+  );
+}
+
+function DeductionChip({
+  item,
+  qty,
+  disabled,
+  onChange,
+}: {
+  item: DeductionCatalogItem;
+  qty: number;
+  disabled: boolean;
+  onChange: (qty: number) => void;
+}) {
+  return (
+    <li
+      className={`rounded-xl border p-3 transition-colors ${
+        qty > 0 ? "border-brand bg-brand-soft" : "border-line bg-panel"
+      } ${disabled ? "opacity-60" : ""}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold break-words">{item.name}</p>
+          <p className="mono mt-0.5 text-[11px] text-dim">
+            每个 ¥{formatYuan(item.fen)} / {item.unit}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            aria-label={`减少${item.name}数量`}
+            disabled={disabled || qty <= 0}
+            onClick={() => onChange(Math.max(0, qty - 1))}
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-line-strong text-lg leading-none hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            −
+          </button>
+          <span className="mono w-6 text-center text-sm font-bold tabular">{qty}</span>
+          <button
+            type="button"
+            aria-label={`增加${item.name}数量`}
+            disabled={disabled}
+            onClick={() => onChange(qty + 1)}
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-line-strong text-lg leading-none hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export function ReportView({
   report,
   onReset,
 }: {
-  report: ValuationReport;
+  report: VinQuoteReport;
   onReset: () => void;
 }) {
-  const [needTowing, setNeedTowing] = useState(true);
-  const [wheelType, setWheelType] = useState<"alloy" | "steel">("alloy");
-  const maxFen = Math.max(...report.items.map((item) => item.amountFen));
-  const { profile } = report;
-  const baseMid = needTowing ? report.netMidFen : report.netMidNoTowingFen;
-  const wheelDeductionFen = wheelType === "steel" ? report.ironWheelDeductionFen : 0;
-  const netMid = roundToYuan(baseMid - wheelDeductionFen);
-  const netLow = roundToYuan(netMid * 0.94);
-  const netHigh = roundToYuan(netMid * 1.08);
-  const fixedDeductionFen = Math.max(0, report.deductionsFen - report.towingFen);
+  const [options, setOptions] = useState<QuoteOptions>(() => ({
+    ...DEFAULT_QUOTE_OPTIONS,
+    missingParts: {},
+  }));
 
-  // 合作方收购价：到厂口径，按价目表分档计价，与上面的残值区间口径不同。
-  const acquisitionCategory = resolveCategory({ vehicleType: profile.vehicleType });
-  const acquisition = acquisitionCategory
-    ? quoteAcquisition({
-        category: acquisitionCategory,
-        weightKg: profile.curbWeightKg,
-        steelRims: wheelType === "steel",
-      })
-    : null;
+  const quote = useMemo(
+    () =>
+      computeQuote({
+        vehicle: report.vehicle,
+        pricing: report.pricing,
+        options,
+      }),
+    [report.vehicle, report.pricing, options],
+  );
+
+  const { vehicle, pricing } = report;
+  const scope = quote.category ? deductionScopeFor(quote.category) : "all";
+  const catalog = pricing.deductions.filter(
+    (item) => item.scope === "all" || item.scope === scope,
+  );
+  const steelPreviewFen =
+    vehicle.weightKg !== null
+      ? Math.round((pricing.steelRimDiscountFenPerTon * vehicle.weightKg) / 1000)
+      : null;
+  const steelAvailable = quote.category === "sedan_suv";
+
+  const update = (patch: Partial<QuoteOptions>) => {
+    setOptions((current) => ({ ...current, ...patch }));
+  };
+
+  const setPartQty = (code: string, qty: number) => {
+    setOptions((current) => {
+      const next = { ...current.missingParts };
+      if (qty <= 0) delete next[code];
+      else next[code] = qty;
+      return { ...current, missingParts: next };
+    });
+  };
+
+  const dataSourceLabel =
+    report.dataSource.kind === "provider"
+      ? `${report.dataSource.providerLabel ?? "VIN 渠道"} · 实车档案${
+          report.dataSource.cached ? "（缓存）" : "（实时）"
+        }`
+      : "内置演示车型";
 
   return (
-    <section id="report" className="scroll-mt-20 pb-24 print:pb-0 sm:pb-28">
+    <section id="report" className="scroll-mt-20 pb-28 print:pb-0 sm:pb-32">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line-strong pb-4">
         <div>
-          <p className="label text-rust">VALUATION REPORT · 残值评估报告</p>
+          <p className="label text-rust">VIN QUOTE · 参考收购价</p>
           <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-            {profile.brandModel}
+            {vehicle.brandModel}
             <span className="mono ml-2 text-lg font-semibold text-dim">
-              {profile.plate ?? `VIN ${profile.vin.slice(0, 3)}…${profile.vin.slice(-4)}`}
+              {vehicle.vin.slice(0, 3)}…{vehicle.vin.slice(-4)}
             </span>
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2 no-print">
-          <span className="tag text-brand border-brand/40">
-            {report.dataSource.kind === "provider"
-              ? `${report.dataSource.providerLabel ?? "VIN 渠道"} · 实车数据`
-              : report.source === "vin"
-                ? "VIN 推定"
-                : "行驶证识别"}
-          </span>
-          {report.dataSource.kind === "provider" ? (
-            <span className="tag text-dim">
-              {report.dataSource.cached ? "缓存命中" : "实时查询"}
-            </span>
-          ) : null}
-          <span className="tag text-warn">样例报告</span>
+          <span className="tag text-brand border-brand/40">{dataSourceLabel}</span>
+          <span className="tag text-warn">仅 VIN 估算</span>
           <button
             type="button"
             onClick={() => window.print()}
@@ -104,434 +207,428 @@ export function ReportView({
             打印 / 存为 PDF
           </button>
           <button type="button" onClick={onReset} className="btn-secondary text-sm">
-            重新评估
+            重新估价
           </button>
         </div>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Stat label="报告编号" value={report.reportNo} />
-        <Stat label="出具时间" value={formatDateTime(report.assessedAt)} />
-        <Stat label="有效期至" value={`${report.validUntil}（7 天）`} />
+        <Stat label="车型" value={`${vehicle.vehicleType} / ${quote.categoryLabel}`} />
+        <Stat label="估价时间" value={formatDateTime(report.pricedAt)} />
+        <Stat
+          label="定价版本"
+          value={`${
+            report.pricingVersion > 0 ? `v${report.pricingVersion}` : "内置价目表"
+          } · ${pricing.rateCardVersion}`}
+        />
       </div>
 
-      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="panel-strong relative flex flex-col self-start overflow-hidden p-5 sm:p-6">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10"
-          />
-          <p className="label">
-            综合残值区间 · {needTowing ? "含拖运上门" : "自行送车"} ·{" "}
-            {wheelType === "alloy" ? "铝合金轮毂" : "铁轮毂"}
-          </p>
-          <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-text">
-            <span className="mono text-3xl font-black sm:text-4xl">
-              ¥{formatYuan(netLow)}
-            </span>
-            <span className="text-dim">–</span>
-            <span className="mono text-3xl font-black sm:text-4xl">
-              ¥{formatYuan(netHigh)}
-            </span>
-          </p>
-          <p className="mt-2 text-sm text-dim">
-            中值{" "}
-            <span className="mono font-bold text-brand">¥{formatYuan(netMid)}</span>
-            ，已扣除拆解{needTowing ? "与拖运" : ""}成本
-          </p>
-
-          <dl className="mt-5 space-y-2 border-t border-line pt-4 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-dim">毛残值</dt>
-              <dd className="mono font-semibold">¥{formatYuan(report.grossFen)}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-dim">拆解与环保处置</dt>
-              <dd className="mono font-semibold text-rust">
-                −¥{formatYuan(fixedDeductionFen)}
-              </dd>
-            </div>
-            {needTowing ? (
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-dim">拖运与上门服务</dt>
-                <dd className="mono font-semibold text-rust">
-                  −¥{formatYuan(report.towingFen)}
-                </dd>
-              </div>
-            ) : null}
-            {wheelType === "steel" ? (
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-dim">铁轮毂差价（400 元/吨）</dt>
-                <dd className="mono font-semibold text-rust">
-                  −¥{formatYuan(report.ironWheelDeductionFen)}
-                </dd>
-              </div>
-            ) : null}
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-dim">车况修正（{report.condition}）</dt>
-              <dd className="mono font-semibold">
-                {report.conditionAdjustmentFen >= 0 ? "+" : "−"}¥
-                {formatYuan(Math.abs(report.conditionAdjustmentFen))}
-              </dd>
-            </div>
-          </dl>
-
-          <div className="mt-5 rounded-xl border border-line px-3.5 py-3">
-            <p className="label text-[10px]">评估口径</p>
-            <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-dim">
-              <li>· 整备质量以行驶证为准；仅有 VIN 时按同平台车型推定。</li>
-              <li>· 废钢单价取四川地区近期回收区间，现场称重后多退少补。</li>
-              <li>· 三元催化按原装件计价，缺件按 10%–15% 扣减。</li>
-            </ul>
-          </div>
-
-          <div className="mt-5 rounded-xl bg-brand-soft p-3.5">
-            <p className="text-xs font-semibold text-brand">
-              评估把握度：{report.confidence.level}
+      {/* ① 结论卡 */}
+      <div className="panel-strong relative mt-6 overflow-hidden p-5 sm:p-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10"
+        />
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="label">预计到手区间 · 仅 VIN 估算 · 未验车</p>
+            <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-text">
+              {quote.range ? (
+                <>
+                  <span className="mono text-3xl font-black sm:text-4xl">
+                    ¥{formatYuan(quote.range.lowFen)}
+                  </span>
+                  <span className="text-dim">–</span>
+                  <span className="mono text-3xl font-black sm:text-4xl">
+                    ¥{formatYuan(quote.range.highFen)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-2xl font-black text-warn">待现场称重后报价</span>
+              )}
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-dim">{report.confidence.note}</p>
+            <p className="mt-2 text-sm text-dim">
+              中值{" "}
+              <span className="mono font-bold text-brand">
+                {quote.netFen === null ? "待确认" : `¥${formatYuan(quote.netFen)}`}
+              </span>
+              {quote.fenPerTon !== null && quote.weightKg !== null ? (
+                <>
+                  {" "}
+                  · ¥{formatYuan(quote.fenPerTon)}/吨 × {(quote.weightKg / 1000).toFixed(3)} 吨
+                </>
+              ) : null}
+            </p>
           </div>
+          <a href="#quote-options" className="btn-secondary text-sm no-print">
+            调整报价选项
+          </a>
         </div>
 
-        <div className="panel p-5 sm:p-6">
-          <div className="mb-4 flex items-end justify-between gap-2">
-            <h3 className="text-lg font-black tracking-tight">残值构成</h3>
-            <span className="mono text-[11px] text-dim">单位：元</span>
-          </div>
-          <ul className="space-y-3.5">
-            {report.items.map((item) => (
-              <li key={item.key}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-sm font-semibold">{item.label}</p>
-                  <p className="mono text-sm font-bold">¥{formatYuan(item.amountFen)}</p>
-                </div>
-                <p className="mt-0.5 text-[11px] leading-snug text-dim">{item.basis}</p>
-                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-raise">
-                  <div
-                    className="h-full rounded-full bg-brand"
-                    style={{ width: `${Math.max(4, Math.round((item.amountFen / maxFen) * 100))}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 flex items-baseline justify-between border-t border-line-strong pt-3">
-            <p className="text-sm font-bold">毛残值合计</p>
-            <p className="mono text-lg font-black">¥{formatYuan(report.grossFen)}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="panel p-5 sm:p-6">
-          <h3 className="text-lg font-black tracking-tight">车辆信息</h3>
-          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
-            {[
-              ["号牌号码", profile.plate ?? "未提供"],
-              ["车辆类型", profile.vehicleType],
-              ["使用性质", profile.useNature + (report.source === "vin" ? "（推定）" : "")],
-              ["品牌型号", profile.brandModel],
-              ["初次登记", profile.registerDate ?? profile.registerNote ?? "以证件为准"],
-              ["车龄", `${report.ageYears} 年`],
-              ["整备质量", `${profile.curbWeightKg} kg`],
-              ["排量 / 燃料", `${profile.displacementMl} ml · ${profile.fuel}`],
-              ["排放标准", profile.emission],
-              [
-                "数据来源",
-                report.dataSource.kind === "provider"
-                  ? `${report.dataSource.providerLabel ?? "VIN 渠道"}${
-                      report.dataSource.cached ? "（缓存）" : "（实时）"
-                    }`
-                  : report.source === "vin"
-                    ? "规则推定（演示）"
-                    : "样例识别",
-              ],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt className="label text-[10px]">{label}</dt>
-                <dd className="mt-0.5 text-sm font-semibold break-words">{value}</dd>
-              </div>
-            ))}
-          </dl>
-          <dl className="mt-4 space-y-1.5 border-t border-line pt-3 text-xs">
-            <div className="flex gap-2">
-              <dt className="shrink-0 text-dim">车辆识别代号</dt>
-              <dd className="mono">{profile.vin}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="shrink-0 text-dim">发动机号码</dt>
-              <dd className="mono">{profile.engineNo ?? "未提供（上传行驶证可补全）"}</dd>
-            </div>
-          </dl>
-          <p className="mt-3 text-[11px] leading-relaxed text-dim">
-            {report.dataSource.kind === "provider"
-              ? `车型档案由${report.dataSource.providerLabel}于 ${
-                  report.dataSource.fetchedAt
-                    ? formatDateTime(report.dataSource.fetchedAt)
-                    : "近期"
-                } 返回；${
-                  report.estimatedFields.length > 0
-                    ? `${report.estimatedFields.join("、")}为推定或待补项`
-                    : "关键参数均来自实车数据"
-                }，最终以行驶证与现场验车为准。`
-              : report.source === "vin"
-                ? `未取到第三方车型档案，本次按 VIN 品牌位与年款位推定；${report.estimatedFields.join("、")}为推定值，上传行驶证后可校准。`
-                : "以上字段为样例识别结果，用于演示报告结构；接入 OCR 后显示证件真实字段。"}
+        {quote.unresolved.length > 0 ? (
+          <p className="mt-4 rounded-lg bg-warn/8 px-3.5 py-2.5 text-xs leading-relaxed text-warn">
+            待确认：{quote.unresolved.join("；")}
           </p>
-        </div>
-
-        <div className="panel p-5 sm:p-6">
-          <h3 className="text-lg font-black tracking-tight">价格影响因素</h3>
-          <ul className="mt-4 space-y-3">
-            {report.factors.map((factor) => (
-              <li key={factor.label} className="flex gap-2.5">
-                <span
-                  className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${TONE_DOT[factor.tone]}`}
-                  aria-hidden
-                />
-                <div>
-                  <p className="text-sm font-semibold">{factor.label}</p>
-                  <p className="text-[11px] leading-snug text-dim">{factor.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        ) : null}
       </div>
 
-      <div className="panel mt-6 p-5 sm:p-6">
+      {/* ② 计价依据 */}
+      <div className="panel mt-5 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 className="text-lg font-black tracking-tight">合作方收购价</h3>
+            <h3 className="text-lg font-black tracking-tight">计价依据</h3>
             <p className="mt-1 text-xs text-dim">
-              回收企业按吨收购的到厂口径，与上方残值区间不是同一算法：残值看「车值多少」，收购价看「按吨能付多少」。
+              按回收企业吨价表计算；吨位、档位与价目表版本都会影响结果。
             </p>
           </div>
           <span className="tag shrink-0">
-            {ACQUISITION_PROVIDER} · v{ACQUISITION_VERSION}
+            {pricing.provider} · {pricing.rateCardVersion}
           </span>
         </div>
-
-        {acquisition ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <dl className="space-y-2 text-sm">
-              <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
-                <dt className="text-dim">车型档位</dt>
-                <dd className="font-semibold">{acquisition.categoryLabel}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
-                <dt className="text-dim">计价方式</dt>
-                <dd className="mono font-semibold">
-                  {acquisition.pricingMode === "unit"
-                    ? "按辆计价"
-                    : acquisition.fenPerTon === null
-                      ? "待确认"
-                      : `¥${formatYuan(acquisition.fenPerTon)}/吨 × ${(
-                          (acquisition.weightKg ?? 0) / 1000
-                        ).toFixed(3)} 吨`}
-                </dd>
-              </div>
-              {acquisition.steelRimDiscount ? (
-                <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
-                  <dt className="text-dim">铁圈缺失（400 元/吨）</dt>
-                  <dd className="mono font-semibold text-rust">已按每吨减 400 元</dd>
-                </div>
-              ) : null}
-              <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
-                <dt className="text-dim">缺件扣款</dt>
-                <dd className="mono font-semibold">
-                  {acquisition.deductionsFen > 0
-                    ? `−¥${formatYuan(acquisition.deductionsFen)}`
-                    : "现场验车核定"}
-                </dd>
-              </div>
-            </dl>
-
-            <div className="sm:text-right">
-              <p className="label">到厂收购价</p>
-              <p className="mono mt-1 text-3xl font-black tracking-tight text-brand">
-                {acquisition.netFen === null
-                  ? "待确认"
-                  : `¥${formatYuan(acquisition.netFen)}`}
-              </p>
+        <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          {[
+            ["车型档位", quote.categoryLabel],
+            [
+              "计价方式",
+              quote.pricingMode === "unit"
+                ? "按辆计价"
+                : quote.fenPerTon === null
+                  ? "待称重后确定档位"
+                  : `¥${formatYuan(quote.fenPerTon)} / 吨`,
+            ],
+            [
+              "整备质量",
+              quote.weightKg === null
+                ? "未知"
+                : `${quote.weightKg} kg（${WEIGHT_SOURCE_LABEL[quote.weightSource]}）`,
+            ],
+            [
+              "定价版本",
+              `${
+                report.pricingVersion > 0 ? `v${report.pricingVersion}` : "内置价目表"
+              } · 价目表 ${pricing.rateCardVersion}`,
+            ],
+          ].map(([label, value]) => (
+            <div key={label} className="flex items-baseline justify-between gap-3 border-b border-line pb-2">
+              <dt className="shrink-0 text-sm text-dim">{label}</dt>
+              <dd className="text-right text-sm font-semibold">{value}</dd>
             </div>
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-warn">
-            车型不在价目表范围内（当前车型：{profile.vehicleType}），收购价待人工核定。
-          </p>
-        )}
-
-        <ul className="mt-4 space-y-1 border-t border-line pt-3 text-[11px] leading-relaxed text-dim">
-          <li>· {TOW_FREE_KM} 公里内免费拖车，超出部分 5 元/公里另计，不含在上述金额中。</li>
-          <li>· 缺件按目录逐项扣减：备胎、电瓶、铝圈、线束、水箱冷凝器、启动机发电机压缩机 ABS、电脑板等。</li>
-          <li>· 车辆有缺失、事故或发动机变速箱拆散时，改按地磅称重计价。</li>
-          {acquisition?.notices.map((notice) => (
-            <li key={notice}>· {notice}</li>
           ))}
-        </ul>
+        </dl>
       </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+        {/* ③ A 区 · 车值 */}
         <div className="panel p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-black tracking-tight">报价选项</h3>
-              <p className="mt-1 text-xs text-dim">
-                选择拖车方式与轮毂材质，上方残值区间会实时调整。
-              </p>
-            </div>
-            <span className="tag shrink-0 text-brand">影响报价</span>
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-lg font-black tracking-tight">A 区 · 车值</h3>
+            <span className="mono text-[11px] text-dim">单位：元</span>
           </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="是否需要拖车上门">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={needTowing}
-              onClick={() => setNeedTowing(true)}
-              className={`rounded-xl border p-3 text-left transition-colors ${
-                needTowing
-                  ? "border-brand bg-brand-soft"
-                  : "border-line hover:border-line-strong"
-              }`}
-            >
-              <span className="flex items-center gap-2 text-sm font-bold">
-                <span
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
-                    needTowing
-                      ? "border-brand bg-brand text-white"
-                      : "border-line-strong text-transparent"
-                  }`}
-                  aria-hidden
-                >
-                  ✓
-                </span>
-                需要拖车上门
-              </span>
-              <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
-                回收企业上门拖车，费用 ¥{formatYuan(report.towingFen)} 已计入区间
-              </span>
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={!needTowing}
-              onClick={() => setNeedTowing(false)}
-              className={`rounded-xl border p-3 text-left transition-colors ${
-                !needTowing
-                  ? "border-brand bg-brand-soft"
-                  : "border-line hover:border-line-strong"
-              }`}
-            >
-              <span className="flex items-center gap-2 text-sm font-bold">
-                <span
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
-                    !needTowing
-                      ? "border-brand bg-brand text-white"
-                      : "border-line-strong text-transparent"
-                  }`}
-                  aria-hidden
-                >
-                  ✓
-                </span>
-                不需要，自行送车
-              </span>
-              <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
-                自己送到回收网点，评估价增加 ¥{formatYuan(report.towingFen)}
-              </span>
-            </button>
+          <div className="mt-2">
+            {quote.baseValueFen !== null ? (
+              <LineRow
+                label={quote.pricingMode === "unit" ? "按辆收购价" : "吨价车值"}
+                detail={
+                  quote.pricingMode === "unit"
+                    ? `${quote.categoryLabel} · 按辆计价`
+                    : `¥${formatYuan(quote.fenPerTon ?? 0)}/吨 × ${(
+                        (quote.weightKg ?? 0) / 1000
+                      ).toFixed(3)} 吨`
+                }
+                amountFen={quote.baseValueFen}
+              />
+            ) : (
+              <LineRow
+                label="吨价车值"
+                detail="整备质量缺失，需地磅称重后才能计算"
+                amountFen={null}
+                tone="pending"
+              />
+            )}
+
+            {quote.steelRimApplied ? (
+              <LineRow
+                label="铁轮毂（相对铝圈）"
+                detail={`每吨减 ¥${formatYuan(pricing.steelRimDiscountFenPerTon)} × ${(
+                  (quote.weightKg ?? 0) / 1000
+                ).toFixed(3)} 吨`}
+                amountFen={quote.steelRimAdjustmentFen}
+                tone="deduct"
+              />
+            ) : null}
           </div>
-          <div className="mt-4 border-t border-line pt-3">
+          <div className="mt-3 flex items-baseline justify-between border-t border-line-strong pt-3">
+            <p className="text-sm font-bold">A 区小计</p>
+            <p className="mono text-lg font-black">
+              {yuan(quote.vehicleSubtotalFen)}
+            </p>
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-dim">
+            车值 = 吨价 × 整备质量 ÷ 1000。未验车，车况、事故与拆散情况都会影响最终结算。
+          </p>
+        </div>
+
+        {/* ④ B 区 · 扣减 */}
+        <div className="panel p-5 sm:p-6">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-lg font-black tracking-tight">B 区 · 扣减</h3>
+            <span className="mono text-[11px] text-dim">单位：元</span>
+          </div>
+          <div className="mt-2">
+            {quote.deductionLines.map((line) => (
+              <LineRow
+                key={`${line.kind}-${line.code ?? line.label}`}
+                label={line.label}
+                detail={line.detail}
+                amountFen={line.amountFen}
+                tone={
+                  line.kind === "reserved"
+                    ? "pending"
+                    : line.amountFen > 0
+                      ? "deduct"
+                      : "plain"
+                }
+                pending={line.kind === "reserved"}
+              />
+            ))}
+          </div>
+          <div className="mt-3 flex items-baseline justify-between border-t border-line-strong pt-3">
+            <p className="text-sm font-bold">已知扣减合计</p>
+            <p className="mono text-lg font-black text-rust">
+              −¥{formatYuan(quote.knownDeductionsFen)}
+            </p>
+          </div>
+          {!options.partsConfirmed ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-warn">
+              缺件未核对：低价端另预留 ¥{formatYuan(quote.reservedMissingFen)}，
+              现场核对后多退少补，不并入已知扣减。
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      {/* ⑤ 选项面板 */}
+      <div id="quote-options" className="panel mt-5 scroll-mt-24 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-black tracking-tight">报价选项</h3>
+            <p className="mt-1 text-xs text-dim">
+              切换轮毂、拖运方式与缺件，上方区间即时重算，不额外请求接口。
+            </p>
+          </div>
+          <span className="tag shrink-0 text-brand">影响报价</span>
+        </div>
+
+        <div className="mt-4 grid gap-5 lg:grid-cols-2">
+          <div>
             <p className="text-sm font-bold">轮毂材质</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="轮毂材质">
               <button
                 type="button"
                 role="radio"
-                aria-checked={wheelType === "alloy"}
-                onClick={() => setWheelType("alloy")}
+                aria-checked={options.wheelType === "alloy"}
+                onClick={() => update({ wheelType: "alloy" })}
                 className={`rounded-xl border p-3 text-left transition-colors ${
-                  wheelType === "alloy"
+                  options.wheelType === "alloy"
                     ? "border-brand bg-brand-soft"
                     : "border-line hover:border-line-strong"
                 }`}
               >
-                <span className="flex items-center gap-2 text-sm font-bold">
-                  <span
-                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
-                      wheelType === "alloy"
-                        ? "border-brand bg-brand text-white"
-                        : "border-line-strong text-transparent"
-                    }`}
-                    aria-hidden
-                  >
-                    ✓
-                  </span>
-                  铝合金轮毂（默认）
+                <span className="flex flex-wrap items-center gap-2 text-sm font-bold">
+                  铝合金轮毂
+                  <span className="tag text-warn">默认假设</span>
                 </span>
                 <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
-                  按当前评估价计价
+                  未验车，默认按铝圈估算；如为铁轮毂请切换。
                 </span>
               </button>
               <button
                 type="button"
                 role="radio"
-                aria-checked={wheelType === "steel"}
-                onClick={() => setWheelType("steel")}
+                aria-checked={options.wheelType === "steel"}
+                onClick={() => update({ wheelType: "steel" })}
                 className={`rounded-xl border p-3 text-left transition-colors ${
-                  wheelType === "steel"
+                  options.wheelType === "steel"
                     ? "border-brand bg-brand-soft"
                     : "border-line hover:border-line-strong"
                 }`}
               >
-                <span className="flex items-center gap-2 text-sm font-bold">
-                  <span
-                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] ${
-                      wheelType === "steel"
-                        ? "border-brand bg-brand text-white"
-                        : "border-line-strong text-transparent"
-                    }`}
-                    aria-hidden
-                  >
-                    ✓
-                  </span>
-                  铁轮毂
-                </span>
+                <span className="flex items-center gap-2 text-sm font-bold">铁轮毂</span>
                 <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
-                  按整备质量每吨减 400 元，本车约少 ¥{formatYuan(report.ironWheelDeductionFen)}
+                  {steelAvailable
+                    ? `铁轮毂（相对铝圈）每吨减 ¥${formatYuan(
+                        pricing.steelRimDiscountFenPerTon,
+                      )}${
+                        steelPreviewFen !== null
+                          ? `，本车约减 ¥${formatYuan(steelPreviewFen)}`
+                          : ""
+                      }。`
+                    : "铁轮毂差价仅适用于小型车档位。"}
                 </span>
               </button>
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-dim">
-              轮毂差价 = 整备质量 {(report.profile.curbWeightKg / 1000).toFixed(2)} 吨 × 400 元/吨；
-              最终以现场验车确认的轮毂材质为准。
+          </div>
+
+          <div>
+            <p className="text-sm font-bold">拖运方式</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="拖运方式">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={options.towMode === "pickup"}
+                onClick={() => update({ towMode: "pickup" })}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  options.towMode === "pickup"
+                    ? "border-brand bg-brand-soft"
+                    : "border-line hover:border-line-strong"
+                }`}
+              >
+                <span className="text-sm font-bold">上门拖车</span>
+                <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
+                  {pricing.towFreeKm} 公里内免费，超出 ¥{formatYuan(pricing.towFenPerKm)}/公里。
+                </span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={options.towMode === "self"}
+                onClick={() => update({ towMode: "self" })}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  options.towMode === "self"
+                    ? "border-brand bg-brand-soft"
+                    : "border-line hover:border-line-strong"
+                }`}
+              >
+                <span className="text-sm font-bold">自行送车</span>
+                <span className="mt-1.5 block text-[11px] leading-relaxed text-dim">
+                  自己送到回收网点，不产生拖运费。
+                </span>
+              </button>
+            </div>
+            <label htmlFor="tow-distance" className="mt-3 block text-xs text-dim">
+              预计拖运里程（公里，可选）
+            </label>
+            <input
+              id="tow-distance"
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={options.distanceKm === 0 ? "" : options.distanceKm}
+              placeholder={`≤ ${pricing.towFreeKm}`}
+              disabled={options.towMode === "self"}
+              onChange={(event) => {
+                const parsed = Number(event.target.value);
+                update({
+                  distanceKm: Number.isFinite(parsed) && parsed > 0 ? parsed : 0,
+                });
+              }}
+              className="input mono mt-1 h-11 max-w-[180px] disabled:opacity-50"
+            />
+            <p className="mt-1 text-[11px] text-dim">
+              不填按免费里程内计算；超出部分才另计拖运费。
             </p>
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-dim">
-            拖运费按成都绕城内测算；自行送车前请先与回收企业确认网点地址与接收时间。
-          </p>
         </div>
 
-        <div className="panel p-5 sm:p-6">
-          <h3 className="text-lg font-black tracking-tight">办理建议</h3>
-          <ol className="mt-3 space-y-3">
-            {report.suggestions.map((text, index) => (
-              <li key={text} className="flex gap-3">
-                <span className="mono mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-bold text-brand">
-                  {index + 1}
-                </span>
-                <p className="text-sm leading-relaxed">{text}</p>
-              </li>
+        <div className="mt-5 border-t border-line pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold">缺件</p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-dim">
+                按价目表逐项扣减。未核对时低价端会预留缺件扣款。
+              </p>
+            </div>
+            <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold">
+              <input
+                type="checkbox"
+                checked={options.partsConfirmed}
+                onChange={(event) =>
+                  update({
+                    partsConfirmed: event.target.checked,
+                    missingParts: event.target.checked ? {} : options.missingParts,
+                  })
+                }
+                className="h-4 w-4 accent-[var(--color-brand)]"
+              />
+              主要部件齐全（确认无缺件）
+            </label>
+          </div>
+
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {catalog.map((item) => (
+              <DeductionChip
+                key={item.code}
+                item={item}
+                qty={options.missingParts[item.code] ?? 0}
+                disabled={options.partsConfirmed}
+                onChange={(qty) => setPartQty(item.code, qty)}
+              />
             ))}
-          </ol>
+          </ul>
+          {options.partsConfirmed ? (
+            <p className="mt-2 text-[11px] text-dim">
+              已确认主要部件齐全，缺件选择已清空，低价端不再预留缺件扣款。
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-dashed border-line-strong bg-raise/60 p-4">
+      {/* ⑥ 待确认项 / 估算假设 */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <div className="panel p-5 sm:p-6">
+          <h3 className="text-lg font-black tracking-tight">待确认项</h3>
+          {quote.unresolved.length > 0 ? (
+            <ul className="mt-3 space-y-2.5">
+              {quote.unresolved.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-sm">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-warn" aria-hidden />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-dim">当前没有额外待确认项；最终仍以现场验车为准。</p>
+          )}
+        </div>
+
+        <div className="panel p-5 sm:p-6">
+          <h3 className="text-lg font-black tracking-tight">估算假设</h3>
+          <ul className="mt-3 space-y-2.5">
+            {quote.assumptions.map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-sm">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-line-strong" aria-hidden />
+                <span className="text-dim">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* ⑦ 办理建议 + CTA */}
+      <div className="panel mt-5 p-5 sm:p-6">
+        <h3 className="text-lg font-black tracking-tight">办理建议</h3>
+        <ol className="mt-3 space-y-3">
+          {[
+            "先核对 VIN 与行驶证一致；车值区间会随整备质量和档位变化。",
+            "交车前清空车内物品，随车带好行驶证、机动车登记证书与号牌。",
+            "现场验车与地磅称重后按实际吨位、缺件和轮毂材质结算。",
+          ].map((text, index) => (
+            <li key={text} className="flex gap-3">
+              <span className="mono mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-bold text-brand">
+                {index + 1}
+              </span>
+              <p className="text-sm leading-relaxed">{text}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="mt-5 rounded-xl border border-dashed border-line-strong bg-raise/60 p-4">
         <p className="text-xs leading-relaxed text-dim">
-          <span className="font-semibold text-text">样例说明：</span>
-          {report.dataSource.kind === "provider"
-            ? `车辆档案来自${report.dataSource.providerLabel}实时查询；残值由内置规则引擎测算，用于演示“输入 VIN → 残值报告”的产品形态，不构成实际收购报价。实际办理以《报废机动车回收管理办法》及回收企业现场验车结果为准。`
-            : "本报告由内置规则引擎生成，用于演示“输入 VIN 或上传行驶证 → 残值报告”的产品形态，不构成实际收购报价。车辆信息为演示数据。实际办理以《报废机动车回收管理办法》及回收企业现场验车结果为准。"}
+          <span className="font-semibold text-text">说明：</span>
+          本报告只凭 VIN 车型档案与回收企业价目表估算，未验车、未称重，不采集证件，
+          不构成实际收购报价。实际办理以《报废机动车回收管理办法》及现场验车结果为准。
         </p>
       </div>
 
@@ -544,19 +641,22 @@ export function ReportView({
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.08em] text-dim">
               <span className="lamp breathe text-brand" aria-hidden />
-              当前评估价
+              预计到手
             </p>
             <p className="mt-0.5 truncate text-[11px] text-dim">
-              {needTowing ? "含拖运上门" : "自行送车"} ·{" "}
-              {wheelType === "alloy" ? "铝合金轮毂" : "铁轮毂"}
+              {options.towMode === "self" ? "自行送车" : "上门拖车"} ·{" "}
+              {options.wheelType === "alloy" ? "铝合金轮毂（默认）" : "铁轮毂"} ·{" "}
+              {options.partsConfirmed ? "部件齐全" : "缺件未核对"}
             </p>
           </div>
           <div className="shrink-0 text-right">
             <p className="mono text-2xl font-black leading-tight tracking-tight sm:text-[28px]">
-              ¥{formatYuan(netMid)}
+              {quote.netFen === null ? "待称重" : `¥${formatYuan(quote.netFen)}`}
             </p>
             <p className="mono text-[10px] text-dim">
-              区间 ¥{formatYuan(netLow)}–¥{formatYuan(netHigh)}
+              {quote.range
+                ? `区间 ¥${formatYuan(quote.range.lowFen)}–¥${formatYuan(quote.range.highFen)}`
+                : "整备质量缺失"}
             </p>
           </div>
         </div>

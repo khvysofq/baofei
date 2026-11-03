@@ -73,6 +73,9 @@ export type ValuationDataSource = {
   notice: string | null;
 };
 
+/**
+ * @deprecated 旧版 6 项残值拆解报告结构。公开报价页已改用 `VinQuoteReport`（pricing.ts）。
+ */
 export type ValuationReport = {
   reportNo: string;
   assessedAt: string;
@@ -546,6 +549,11 @@ function buildProfileFromSpec(
   };
 }
 
+/**
+ * @deprecated 旧版残值拆解引擎（废钢 + 三元催化 + 有色金属 + 可回用件）。
+ * 公开报价页与 `/api/valuation/analyze` 已改用 `src/lib/valuation/pricing.ts` 的单一吨价模型，
+ * 本函数仅保留给既有测试与历史调用，不要再接入用户面。
+ */
 export function buildValuationReport(options: {
   seed: string;
   source?: ValuationSource;

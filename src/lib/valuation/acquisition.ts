@@ -211,6 +211,10 @@ export function calcTowFen(distanceKm: number | null): number | null {
  * 计算到厂收购价。
  * 铁圈（铁轮毂）缺失：小型车档位吨价每吨减 400 元。
  */
+/**
+ * @deprecated 历史价目表计算（仍作为默认定价数据的来源参考）。
+ * 用户面统一使用 `src/lib/valuation/pricing.ts` 的 `computeQuote`，本文件的分类逻辑不再进入公开报价。
+ */
 export function quoteAcquisition(input: {
   category: AcquisitionCategory;
   categoryLabel?: string;
@@ -282,7 +286,7 @@ export function quoteAcquisition(input: {
     : tier.fenPerTon;
 
   if (steelRimDiscount) {
-    notices.push("铁圈缺失，吨价每吨减 400 元");
+    notices.push("铁轮毂（相对铝圈）每吨减 400 元");
   }
   if (input.category === "bus_mid_ac" || input.category === "bus_large") {
     notices.push("价目表为区间价，此处取中值，实际以验车定档为准");

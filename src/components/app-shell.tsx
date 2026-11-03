@@ -179,8 +179,10 @@ function LandingShell({ children }: { children: React.ReactNode }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // 首页是静态营销页：不接入案件上下文、调试抽屉与侧边导航。
-  if (pathname === "/") return <LandingShell>{children}</LandingShell>;
+  // 首页、VIN 说明页与管理页是独立页面：不接入案件上下文、调试抽屉与侧边导航。
+  if (pathname === "/" || pathname === "/vin-help" || pathname === "/admin") {
+    return <LandingShell>{children}</LandingShell>;
+  }
   return (
     <CaseProvider>
       <ShellBody>{children}</ShellBody>

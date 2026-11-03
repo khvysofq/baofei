@@ -1,108 +1,129 @@
-import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
-import { buildValuationReport } from "@/lib/valuation/engine";
-import { validateVin } from "@/lib/vin/normalize";
 import { explainVinError, queryVin } from "@/lib/vin";
-import type { VinVehicleSpec } from "@/lib/vin/types";
+import { validateVin } from "@/lib/vin/normalize";
+import {
+  DEFAULT_QUOTE_OPTIONS,
+  computeQuote,
+  type ValuationDataSource,
+  type VehicleProfile,
+  type VinQuoteReport,
+} from "@/lib/valuation/pricing";
+import { getActivePricing } from "@/lib/valuation/pricing-store";
+import {
+  DEMO_VIN,
+  buildDemoVehicleProfile,
+  buildProfileFromSpec,
+} from "@/lib/valuation/profile";
 
-const MAX_BYTES = 10 * 1024 * 1024;
-/** 首页「填入示例 VIN」使用的演示车架号；跳过第三方渠道，保证样例始终可用。 */
-const DEMO_VIN = "LSVAA49J5C2345678";
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/svg+xml"];
+const PHOTO_DISABLED_MESSAGE = "已停止照片识别，请填写 17 位 VIN";
 
-function badRequest(error: string, status = 400) {
-  return NextResponse.json({ ok: false, error }, { status });
+function fail(error: string, status: number, code?: string) {
+  return NextResponse.json(
+    { ok: false, error, ...(code ? { code } : {}) },
+    { status },
+  );
+}
+
+function manualPricingHint(): string {
+  return "如确认 VIN 无误，可电话联系人工按吨计价。";
 }
 
 /**
- * 残值评估入口，两种输入：
- * 1. JSON `{ vin }`：手动填写 17 位车辆识别代号。
- * 2. multipart `file`：上传行驶证正面照片（样例版不落盘，只在内存中取摘要）。
+ * 公开报价入口：只接受 JSON `{ vin }`。
+ *
+ * 车型档案必须来自第三方渠道或内置示例 VIN；渠道无结果/不可用时明确报错，
+ * 不再用 WMI / 预设车型兜底编造品牌与重量。
  */
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
 
-  if (contentType.includes("application/json")) {
-    let payload: { vin?: unknown };
-    try {
-      payload = (await request.json()) as { vin?: unknown };
-    } catch {
-      return badRequest("请求格式不正确，请重新提交。");
+  if (!contentType.includes("application/json")) {
+    if (contentType.includes("multipart/form-data")) {
+      return fail(PHOTO_DISABLED_MESSAGE, 415, "PHOTO_NOT_SUPPORTED");
     }
-    if (typeof payload.vin !== "string" || !payload.vin.trim()) {
-      return badRequest("请填写车辆识别代号（VIN）。");
-    }
-    const validation = validateVin(payload.vin, {
-      checkDigit: process.env.VIN_CHECK_DIGIT !== "off",
-    });
-    if (!validation.ok) {
-      return NextResponse.json(
-        { ok: false, error: validation.message, code: validation.code },
-        { status: 400 },
-      );
-    }
-    const vin = validation.vin;
+    return fail("请以 JSON 提交 17 位 VIN。", 415, "UNSUPPORTED_MEDIA_TYPE");
+  }
 
-    // 真实 VIN 渠道优先；渠道无结果时明确告知，渠道故障时降级为演示推定并标注原因。
-    let spec: VinVehicleSpec | null = null;
-    let notice: string | null = null;
-    if (vin === DEMO_VIN) {
-      notice = "示例 VIN：使用内置演示车型推算，可直接体验完整报告。";
-    } else {
-      try {
-        const outcome = await queryVin(vin);
-        spec = outcome.spec;
-      } catch (caught) {
-        const explained = explainVinError(caught);
-        if (!explained.shouldFallbackToDemo) {
-          const status = explained.code === "INVALID_VIN" ? 400 : 404;
-          return NextResponse.json(
-            { ok: false, error: explained.message, code: explained.code },
-            { status },
-          );
-        }
-        notice = explained.message;
-        console.warn(
-          `[vin] ${vin} 渠道查询失败，降级演示推定：${explained.code} ${explained.message}`,
+  let payload: { vin?: unknown };
+  try {
+    payload = (await request.json()) as { vin?: unknown };
+  } catch {
+    return fail("请求格式不正确，请重新提交。", 400, "BAD_JSON");
+  }
+
+  if (typeof payload.vin !== "string" || !payload.vin.trim()) {
+    return fail("请填写车辆识别代号（VIN）。", 400, "VIN_REQUIRED");
+  }
+
+  const validation = validateVin(payload.vin, {
+    checkDigit: process.env.VIN_CHECK_DIGIT !== "off",
+  });
+  if (!validation.ok) {
+    return fail(validation.message, 400, validation.code ?? "INVALID_VIN");
+  }
+  const vin = validation.vin;
+
+  let vehicle: VehicleProfile;
+  let dataSource: ValuationDataSource;
+
+  if (vin === DEMO_VIN) {
+    vehicle = buildDemoVehicleProfile(vin);
+    dataSource = {
+      kind: "demo",
+      providerId: "demo",
+      providerLabel: "内置演示车型",
+      cached: false,
+      fetchedAt: new Date().toISOString(),
+      notice: "示例 VIN：使用内置演示车型体验报告；真实报价请填写实际 VIN。",
+    };
+  } else {
+    try {
+      const outcome = await queryVin(vin);
+      vehicle = buildProfileFromSpec(outcome.spec, vin);
+      dataSource = {
+        kind: "provider",
+        providerId: outcome.spec.providerId,
+        providerLabel: outcome.spec.providerLabel,
+        cached: outcome.spec.cached,
+        fetchedAt: outcome.spec.fetchedAt,
+        notice: null,
+      };
+    } catch (caught) {
+      const explained = explainVinError(caught);
+      if (explained.code === "INVALID_VIN") {
+        return fail(explained.message, 400, explained.code);
+      }
+      if (explained.code === "NOT_FOUND") {
+        return fail(
+          `没有查到该 VIN 对应的车型信息，请核对 VIN 后重试。${manualPricingHint()}`,
+          404,
+          explained.code,
         );
       }
+      return fail(
+        `车型档案查询暂时不可用，请稍后重试。${manualPricingHint()}`,
+        502,
+        explained.code,
+      );
     }
-
-    const report = buildValuationReport({
-      seed: createHash("sha256").update(`vin:${vin}`).digest("hex"),
-      source: "vin",
-      vin,
-      spec,
-      notice,
-    });
-    return NextResponse.json({ ok: true, report });
   }
 
-  let form: FormData;
-  try {
-    form = await request.formData();
-  } catch {
-    return badRequest("请求格式不正确，请重新上传。");
-  }
+  const active = await getActivePricing();
+  const quote = computeQuote({
+    vehicle,
+    pricing: active.config,
+    options: DEFAULT_QUOTE_OPTIONS,
+  });
 
-  const file = form.get("file");
-  if (!(file instanceof File)) {
-    return badRequest("没有收到行驶证照片。");
-  }
-  if (file.size === 0) {
-    return badRequest("照片内容为空，请重新选择。");
-  }
-  if (file.size > MAX_BYTES) {
-    return badRequest("照片超过 10MB，请压缩后重试。", 413);
-  }
-  if (!ALLOWED.includes(file.type)) {
-    return badRequest("仅支持 JPG / PNG / WebP / HEIC 格式的照片。", 415);
-  }
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const seed = createHash("sha256").update(buffer).digest("hex");
-  const sample = form.get("sample") === "1";
-  const report = buildValuationReport({ seed, sample, source: "license" });
+  const report: VinQuoteReport = {
+    vehicle,
+    pricing: active.config,
+    quote,
+    dataSource,
+    pricedAt: new Date().toISOString(),
+    pricingVersion: active.version,
+    demo: vin === DEMO_VIN,
+  };
 
   return NextResponse.json({ ok: true, report });
 }

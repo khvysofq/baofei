@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { ValuationApp } from "@/components/valuation/valuation-app";
 
 export const metadata: Metadata = {
-  title: "报废残值评估 · 输入 VIN，30 秒看报废值多少",
+  title: "报废车参考收购价 · 输入 VIN 获取价格区间",
   description:
-    "填写车辆识别代号（VIN）或上传行驶证照片，自动解析车型与车龄，按四川地区回收行情拆解废钢、三元催化、有色金属等残值，生成可参考的报废价格评估报告。",
+    "输入 17 位车辆识别代号（VIN），按回收企业吨价表与整备质量估算报废车参考收购价区间，并列出缺件、拖运与服务费扣减。仅 VIN 估算，未验车，不构成实际报价。",
 };
 
 export default function Home() {

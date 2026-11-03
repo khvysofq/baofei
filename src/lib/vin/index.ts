@@ -328,7 +328,7 @@ async function lookupVin(
     if (useCache) await cacheSet(missKey(vin), "1", missTtl);
     throw new VinQueryError({
       code: "NOT_FOUND",
-      message: "各渠道均未查到该 VIN 对应的车型信息，请核对 VIN 后重试，或上传行驶证照片。",
+      message: "各渠道均未查到该 VIN 对应的车型信息，请核对 VIN 后重试，或电话联系人工按吨计价。",
       providerId: errors[0].providerId,
       providerLabel: errors.map((error) => error.providerLabel).join("、"),
       retryable: false,
@@ -372,7 +372,7 @@ export function explainVinError(error: unknown): {
     case "QUOTA_EXCEEDED":
       return {
         code: error.code,
-        message: "VIN 查询次数已用尽，请联系管理员充值，或先上传行驶证照片。",
+        message: "VIN 查询次数已用尽，请联系管理员充值，或电话联系人工按吨计价。",
         shouldFallbackToDemo: true,
       };
     case "UNAUTHORIZED":
@@ -384,13 +384,13 @@ export function explainVinError(error: unknown): {
     case "TIMEOUT":
       return {
         code: error.code,
-        message: "VIN 查询超时，已按规则引擎给出推定结果。",
+        message: "VIN 查询超时，请稍后重试，或电话联系人工按吨计价。",
         shouldFallbackToDemo: true,
       };
     default:
       return {
         code: error.code,
-        message: "VIN 查询渠道暂时不可用，已按规则引擎给出推定结果。",
+        message: "VIN 查询渠道暂时不可用，请稍后重试，或电话联系人工按吨计价。",
         shouldFallbackToDemo: true,
       };
   }

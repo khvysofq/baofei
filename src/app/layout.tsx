@@ -14,29 +14,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "报废残值评估",
+  title: "报废车参考收购价",
   description:
-    "输入车辆识别代号（VIN）或上传行驶证照片，按四川地区回收行情拆解废钢、三元催化、有色金属等残值，生成报废价格评估报告。",
+    "输入 17 位车辆识别代号（VIN），按回收企业吨价表与整备质量估算报废车参考收购价区间，并列出缺件、拖运与服务费扣减。",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://baofei.publicrandom.com"),
   openGraph: {
-    title: "报废残值评估",
-    description: "输入 VIN 或上传行驶证，30 秒看清这辆车报废值多少。",
+    title: "报废车参考收购价",
+    description: "输入 VIN，获取四川地区报废车参考收购价区间。",
     type: "website",
-    siteName: "报废残值评估",
+    siteName: "报废车参考收购价",
     locale: "zh_CN",
     images: [
       {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "报废残值评估：输入 VIN，看清报废值多少",
+        alt: "报废车参考收购价：输入 VIN，获取参考区间",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "报废残值评估",
-    description: "输入 VIN 或上传行驶证，自动拆解残值并生成评估报告。",
+    title: "报废车参考收购价",
+    description: "输入 VIN，按吨价表估算参考收购价区间。",
     images: ["/og.png"],
   },
 };
