@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { VisitTracker } from "@/components/analytics/visit-tracker";
 import { ValuationApp } from "@/components/valuation/valuation-app";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <ValuationApp />;
+  return (
+    <>
+      <VisitTracker />
+      <ValuationApp />
+    </>
+  );
 }

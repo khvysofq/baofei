@@ -180,7 +180,7 @@ function LandingShell({ children }: { children: React.ReactNode }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // 首页与管理页是独立页面：不接入案件上下文、调试抽屉与侧边导航。
-  if (pathname === "/" || pathname === "/guanli") {
+  if (pathname === "/" || pathname.startsWith("/guanli")) {
     return <LandingShell>{children}</LandingShell>;
   }
   return (

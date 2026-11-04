@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordVinSearch } from "@/lib/analytics/log";
 import { explainVinError, queryVin } from "@/lib/vin";
 import { validateVin } from "@/lib/vin/normalize";
 import {
@@ -94,12 +95,24 @@ export async function POST(request: Request) {
         return fail(explained.message, 400, explained.code);
       }
       if (explained.code === "NOT_FOUND") {
+        await recordVinSearch({
+          vin,
+          isDemo: false,
+          status: "not_found",
+          errorCode: explained.code,
+        });
         return fail(
           `没有查到该 VIN 对应的车型信息，请核对 VIN 后重试。${manualPricingHint()}`,
           404,
           explained.code,
         );
       }
+      await recordVinSearch({
+        vin,
+        isDemo: false,
+        status: "error",
+        errorCode: explained.code,
+      });
       return fail(
         `车型档案查询暂时不可用，请稍后重试。${manualPricingHint()}`,
         502,
@@ -124,6 +137,16 @@ export async function POST(request: Request) {
     pricingVersion: active.version,
     demo: vin === DEMO_VIN,
   };
+
+  await recordVinSearch({
+    vin,
+    isDemo: report.demo,
+    status: "ok",
+    brandModel: vehicle.brandModel,
+    vehicleType: vehicle.vehicleType,
+    provider: dataSource.providerId,
+    pricingVersion: active.version,
+  });
 
   return NextResponse.json({ ok: true, report });
 }

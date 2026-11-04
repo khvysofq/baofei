@@ -371,9 +371,18 @@ export function AdminApp() {
             <p className="mono text-[10px] tracking-[0.14em] text-dim">PRICING ADMIN</p>
           </div>
           {view === "ready" ? (
-            <button type="button" onClick={() => void logout()} className="btn-secondary min-h-[40px] px-4 text-sm">
-              退出登录
-            </button>
+            <div className="flex items-center gap-2">
+              <a href="/guanli/tongji" className="btn-secondary min-h-[40px] px-3 text-sm">
+                数据统计
+              </a>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="btn-secondary min-h-[40px] px-3 text-sm"
+              >
+                退出登录
+              </button>
+            </div>
           ) : null}
         </div>
       </header>
