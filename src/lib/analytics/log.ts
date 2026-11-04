@@ -19,13 +19,18 @@ export type VinSearchEntry = {
   vehicleType?: string | null;
   provider?: string | null;
   pricingVersion?: number | null;
+  quoteLowFen?: number | null;
+  quoteMidFen?: number | null;
+  quoteHighFen?: number | null;
+  quoteNetFen?: number | null;
 };
 
 export async function recordVinSearch(entry: VinSearchEntry): Promise<void> {
   const write = query(
     `INSERT INTO vin_search_events
-       (vin, is_demo, status, error_code, brand_model, vehicle_type, provider, pricing_version)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+       (vin, is_demo, status, error_code, brand_model, vehicle_type, provider, pricing_version,
+        quote_low_fen, quote_mid_fen, quote_high_fen, quote_net_fen)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [
       entry.vin,
       entry.isDemo,
@@ -35,6 +40,10 @@ export async function recordVinSearch(entry: VinSearchEntry): Promise<void> {
       entry.vehicleType ?? null,
       entry.provider ?? null,
       entry.pricingVersion ?? null,
+      entry.quoteLowFen ?? null,
+      entry.quoteMidFen ?? null,
+      entry.quoteHighFen ?? null,
+      entry.quoteNetFen ?? null,
     ],
   ).catch(() => {
     // 统计失败不影响评估

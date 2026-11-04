@@ -146,6 +146,10 @@ export async function POST(request: Request) {
     vehicleType: vehicle.vehicleType,
     provider: dataSource.providerId,
     pricingVersion: active.version,
+    quoteLowFen: quote.range?.lowFen ?? null,
+    quoteMidFen: quote.range?.midFen ?? null,
+    quoteHighFen: quote.range?.highFen ?? null,
+    quoteNetFen: quote.netFen,
   });
 
   return NextResponse.json({ ok: true, report });

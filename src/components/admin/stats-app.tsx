@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatYuan } from "@/lib/domain/money";
 
 type CountSet = { today: number; last7: number; last30: number; total: number };
 
@@ -35,6 +36,12 @@ type StatsPayload = {
     vehicleType: string | null;
     provider: string | null;
     pricingVersion: number | null;
+    quote: {
+      lowFen: number | null;
+      midFen: number | null;
+      highFen: number | null;
+      netFen: number | null;
+    };
     queriedAt: string;
   }>;
 };
@@ -345,12 +352,13 @@ export function StatsApp() {
                 </p>
               ) : (
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left text-xs">
+                  <table className="w-full min-w-[900px] text-left text-xs">
                     <thead>
                       <tr className="border-b border-line text-dim">
                         <th className="py-2 pr-3 font-semibold">时间</th>
                         <th className="py-2 pr-3 font-semibold">VIN</th>
                         <th className="py-2 pr-3 font-semibold">车型</th>
+                        <th className="py-2 pr-3 font-semibold">参考区间</th>
                         <th className="py-2 pr-3 font-semibold">来源</th>
                         <th className="py-2 pr-3 font-semibold">状态</th>
                         <th className="py-2 font-semibold">价格版本</th>
@@ -371,6 +379,22 @@ export function StatsApp() {
                           <td className="py-2.5 pr-3">
                             <p className="font-semibold">{row.brandModel ?? "—"}</p>
                             <p className="text-[10px] text-dim">{row.vehicleType ?? "—"}</p>
+                          </td>
+                          <td className="mono py-2.5 pr-3 whitespace-nowrap">
+                            {row.quote.lowFen !== null && row.quote.highFen !== null ? (
+                              <>
+                                <p className="font-semibold">
+                                  ¥{formatYuan(row.quote.lowFen)}–¥{formatYuan(row.quote.highFen)}
+                                </p>
+                                {row.quote.midFen !== null ? (
+                                  <p className="text-[10px] text-dim">
+                                    中值 ¥{formatYuan(row.quote.midFen)}
+                                  </p>
+                                ) : null}
+                              </>
+                            ) : (
+                              <span className="text-dim">待称重</span>
+                            )}
                           </td>
                           <td className="py-2.5 pr-3 whitespace-nowrap text-dim">
                             {providerLabel(row.provider)}

@@ -57,6 +57,10 @@ type RecentRow = {
   vehicle_type: string | null;
   provider: string | null;
   pricing_version: number | null;
+  quote_low_fen: number | null;
+  quote_mid_fen: number | null;
+  quote_high_fen: number | null;
+  quote_net_fen: number | null;
   queried_at: string;
 };
 
@@ -143,6 +147,10 @@ export async function GET() {
         vehicle_type,
         provider,
         pricing_version,
+        quote_low_fen,
+        quote_mid_fen,
+        quote_high_fen,
+        quote_net_fen,
         to_char(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI') AS queried_at
       FROM vin_search_events
       ORDER BY created_at DESC
@@ -201,6 +209,12 @@ export async function GET() {
         vehicleType: row.vehicle_type,
         provider: row.provider,
         pricingVersion: row.pricing_version,
+        quote: {
+          lowFen: row.quote_low_fen,
+          midFen: row.quote_mid_fen,
+          highFen: row.quote_high_fen,
+          netFen: row.quote_net_fen,
+        },
         queriedAt: row.queried_at,
       })),
     });
