@@ -6,6 +6,7 @@ export const instant = false;
 
 export const metadata = {
   title: "数据统计 · 报废车参考收购价",
+  robots: { index: false, follow: false },
 };
 
 export default async function AdminStatsPage() {

@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "报废车参考收购价",
   title: "报废车参考收购价",
   description:
     "输入 17 位车辆识别代号（VIN），按当地实时回收行情与整备质量估算报废车参考收购价区间，并列出缺件、拖运与服务费扣减。",
