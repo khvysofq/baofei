@@ -9,7 +9,7 @@
   → systemd: baofei.service
   → node server.js（Next.js standalone）
       ├─ 业务数据：PGlite（/var/lib/baofei/pglite）
-      ├─ 缓存：进程内存
+      ├─ 缓存：PGlite 表 cache_entries（跨重启保留）
       └─ 证件样例：代码生成 SVG，不落对象存储
 ```
 
@@ -82,6 +82,19 @@ ssh publish_web_server '
 服务启动前会执行 `scripts/db-migrate.mjs`，迁移是幂等的；升级时新增的
 `db/migrations/*.sql` 会自动应用。
 
+## VIN 缓存
+
+云端没有 Redis，使用 `CACHE_DRIVER=db`：VIN 成功结果写入 PGlite 的
+`cache_entries` 表，`VIN_CACHE_TTL_SECONDS=2592000`（30 天），命中后顺延 TTL。
+服务重启或重新发版都不会丢缓存；同一 VIN 只有第一次会打第三方渠道并计费。
+查询失败（渠道未返回车型）只缓存 10 分钟，避免把临时故障锁死 30 天。
+
+```bash
+# 检查缓存行与剩余天数（需要先 systemctl stop baofei）
+SELECT key, round(extract(epoch from (expires_at - now()))/86400.0, 2) AS days
+FROM cache_entries ORDER BY key;
+```
+
 ## 备份与恢复
 
 ```bash
@@ -112,7 +125,7 @@ ssh publish_web_server '
 
 ```bash
 curl -fsS https://baofei.publicrandom.com/api/health
-# {"data":{"status":"ok",...,"dbDriver":"pglite","storageDriver":"local","cacheDriver":"memory"}}
+# {"data":{"status":"ok",...,"dbDriver":"pglite","storageDriver":"local","cacheDriver":"db"}}
 
 systemctl status baofei
 journalctl -u baofei -n 50 --no-pager

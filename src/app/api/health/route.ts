@@ -1,4 +1,5 @@
 import { ok } from "@/lib/api";
+import { cacheDriver } from "@/lib/cache";
 import { dbDriver, query } from "@/lib/db";
 import { ensureAllSampleAssets, isLocalStorage } from "@/lib/storage";
 
@@ -25,6 +26,6 @@ export async function GET() {
     dbDriver: dbDriver(),
     storage,
     storageDriver: isLocalStorage() ? "local" : "s3",
-    cacheDriver: process.env.REDIS_URL && process.env.CACHE_DRIVER !== "memory" ? "redis" : "memory",
+    cacheDriver: cacheDriver(),
   });
 }

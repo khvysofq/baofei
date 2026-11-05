@@ -1,4 +1,4 @@
-import { cacheDelete, cacheGet, cacheSet } from "../cache";
+import { cacheDelete, cacheGet, cacheSet, cacheTouch } from "../cache";
 import { recordVinLookup } from "./log";
 import { validateVin } from "./normalize";
 import { jisuepcProvider } from "./providers/jisuepc";
@@ -206,6 +206,7 @@ async function lookupVin(
             cached: true,
             latencyMs: 0,
           };
+          await cacheTouch(successKey(provider.id, vin), cacheTtl);
           attempts.push({
             providerId: provider.id,
             providerLabel: provider.label,
