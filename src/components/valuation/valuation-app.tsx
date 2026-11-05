@@ -7,7 +7,7 @@ import { validateVin } from "@/lib/vin/normalize";
 
 type Status = "idle" | "analyzing" | "done";
 
-const STEPS = ["校验 VIN 格式", "查询车型档案", "读取吨价表", "生成参考区间"];
+const STEPS = ["校验 VIN 格式", "查询车型档案", "读取当地实时行情", "生成参考区间"];
 
 function isVinQuoteReport(value: unknown): value is VinQuoteReport {
   return (
@@ -133,7 +133,7 @@ export function ValuationApp() {
               。
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-dim">
-              填写 17 位车辆识别代号（VIN），按回收企业吨价表和整备质量估算车值，
+              填写 17 位车辆识别代号（VIN），按当地实时动态行情和整备质量估算车值，
               再扣缺件、拖运与服务费，给出参考到手区间。只凭 VIN 估算，未验车。
             </p>
 
@@ -141,7 +141,7 @@ export function ValuationApp() {
               {[
                 ["17 位", "VIN 即可估价"],
                 ["30 秒", "生成参考区间"],
-                ["按吨", "统一吨价表"],
+                ["实时", "当地动态行情"],
               ].map(([value, label]) => (
                 <div key={label} className="rounded-xl border border-line bg-panel px-3 py-2.5">
                   <dt className="mono text-lg font-black tracking-tight">{value}</dt>

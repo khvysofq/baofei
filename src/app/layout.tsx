@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "报废车参考收购价",
   description:
-    "输入 17 位车辆识别代号（VIN），按回收企业吨价表与整备质量估算报废车参考收购价区间，并列出缺件、拖运与服务费扣减。",
+    "输入 17 位车辆识别代号（VIN），按当地实时回收行情与整备质量估算报废车参考收购价区间，并列出缺件、拖运与服务费扣减。",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://baofei.publicrandom.com"),
   openGraph: {
     title: "报废车参考收购价",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "报废车参考收购价",
-    description: "输入 VIN，按吨价表估算参考收购价区间。",
+    description: "输入 VIN，按当地实时回收行情估算参考收购价区间。",
     images: ["/og.png"],
   },
 };

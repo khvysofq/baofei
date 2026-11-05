@@ -277,7 +277,7 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
           <div>
             <h3 className="text-lg font-black tracking-tight">计价依据</h3>
             <p className="mt-1 text-xs text-dim">
-              按回收企业吨价表计算；吨位、档位与价目表版本都会影响结果。
+              按当地实时回收行情计算；吨位、档位与行情版本都会影响结果。
             </p>
           </div>
           <span className="tag shrink-0">
