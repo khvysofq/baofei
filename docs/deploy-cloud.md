@@ -82,6 +82,24 @@ ssh publish_web_server '
 服务启动前会执行 `scripts/db-migrate.mjs`，迁移是幂等的；升级时新增的
 `db/migrations/*.sql` 会自动应用。
 
+## 防刷与渠道额度保护
+
+VIN 查询会真实消耗第三方额度，公开接口做了三层保护：
+
+1. **单 IP 限流**（进程内固定窗口，重启清零）
+   - `VIN_RATE_LIMIT_PER_MINUTE`（默认 8）
+   - `VIN_RATE_LIMIT_PER_HOUR`（默认 40）
+   - `VIN_RATE_LIMIT_PER_DAY`（默认 120）
+   - 超出返回 `429 RATE_LIMITED` + `Retry-After`，正常用户几乎不会触发。
+2. **每日渠道总预算**（数据库 `provider_usage`，跨重启保留）
+   - `VIN_DAILY_CALL_LIMIT`（默认 300 次/天，约 ¥13.5）
+   - 只有缓存未命中、真正要打渠道时才原子预占一次；缓存命中不占预算。
+   - 超限后所有未缓存 VIN 返回 `503 QUOTA_EXCEEDED`，已缓存车辆仍可正常查询。
+3. **紧急开关**
+   - `VIN_KILL_SWITCH=1` 后停止调用渠道，缓存仍可用；改回 `0` 并重启恢复。
+
+后台 `/guanli/tongji` 新增「今日渠道调用」卡片，可看到已用 / 上限 / 剩余。
+
 ## VIN 缓存
 
 云端没有 Redis，使用 `CACHE_DRIVER=db`：VIN 成功结果写入 PGlite 的

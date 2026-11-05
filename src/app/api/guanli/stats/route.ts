@@ -5,6 +5,7 @@ import {
   isAdminAuthenticated,
 } from "@/lib/admin/auth";
 import { query } from "@/lib/db";
+import { dailyCallLimit } from "@/lib/vin/budget";
 
 async function guard(): Promise<NextResponse | null> {
   if (!adminConfigured()) {
@@ -157,6 +158,14 @@ export async function GET() {
       LIMIT 100
     `);
 
+    const usageRows = await query<{ used: number }>(`
+      SELECT COALESCE(SUM(used), 0)::int AS used
+      FROM provider_usage
+      WHERE day = (now() AT TIME ZONE 'Asia/Shanghai')::date
+    `);
+    const usedToday = n(usageRows[0]?.used);
+    const limitToday = dailyCallLimit();
+
     const counts = countRows[0];
     const vins = vinRows[0];
 
@@ -190,6 +199,11 @@ export async function GET() {
           last30: n(vins?.ok_30d),
         },
         uniqueVin30d: n(vins?.unique_vin_30d),
+      },
+      providerUsage: {
+        used: usedToday,
+        limit: limitToday,
+        remaining: Math.max(0, limitToday - usedToday),
       },
       daily: daily.map((row) => ({
         date: row.date,

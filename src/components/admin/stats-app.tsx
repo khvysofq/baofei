@@ -18,6 +18,11 @@ type StatsPayload = {
     ok: { today: number; last7: number; last30: number };
     uniqueVin30d: number;
   };
+  providerUsage: {
+    used: number;
+    limit: number;
+    remaining: number;
+  };
   daily: Array<{
     date: string;
     label: string;
@@ -293,7 +298,7 @@ export function StatsApp() {
               />
             </div>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="panel p-4">
                 <p className="label">近 30 日访客</p>
                 <p className="mono mt-1.5 text-xl font-black">{fmt(data.visits.visitors.last30)}</p>
@@ -303,6 +308,15 @@ export function StatsApp() {
                 <p className="mono mt-1.5 text-xl font-black">{fmt(data.vin.total.last30)}</p>
                 <p className="mt-0.5 text-[11px] text-dim">
                   去重 VIN {fmt(data.vin.uniqueVin30d)} 个
+                </p>
+              </div>
+              <div className="panel p-4">
+                <p className="label">今日渠道调用</p>
+                <p className="mono mt-1.5 text-xl font-black">
+                  {fmt(data.providerUsage.used)} / {fmt(data.providerUsage.limit)}
+                </p>
+                <p className="mt-0.5 text-[11px] text-dim">
+                  剩余 {fmt(data.providerUsage.remaining)} 次；超限后仅缓存结果可用
                 </p>
               </div>
               <div className="panel p-4">

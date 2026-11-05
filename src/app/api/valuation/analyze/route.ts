@@ -9,6 +9,7 @@ import {
   type VehicleProfile,
   type VinQuoteReport,
 } from "@/lib/valuation/pricing";
+import { checkVinRateLimit, clientIp } from "@/lib/security/rate-limit";
 import { getActivePricing } from "@/lib/valuation/pricing-store";
 import { buildProfileFromSpec } from "@/lib/valuation/profile";
 
@@ -32,6 +33,25 @@ function manualPricingHint(): string {
  * 不用 WMI / 预设车型兜底编造品牌与重量。
  */
 export async function POST(request: Request) {
+  const rate = checkVinRateLimit(clientIp(request));
+  if (!rate.allowed) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "请求过于频繁，请稍后再试。",
+        code: "RATE_LIMITED",
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rate.retryAfterSec),
+          "X-RateLimit-Limit": String(rate.limit),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
+
   const contentType = request.headers.get("content-type") ?? "";
 
   if (!contentType.includes("application/json")) {
@@ -91,6 +111,12 @@ export async function POST(request: Request) {
         404,
         explained.code,
       );
+    }
+    if (explained.code === "QUOTA_EXCEEDED" || explained.code === "MAINTENANCE") {
+      return fail(explained.message, 503, explained.code);
+    }
+    if (explained.code === "RATE_LIMITED") {
+      return fail(explained.message, 429, explained.code);
     }
     await recordVinSearch({
       vin,

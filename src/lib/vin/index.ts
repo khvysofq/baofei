@@ -1,4 +1,5 @@
 import { cacheDelete, cacheGet, cacheSet, cacheTouch } from "../cache";
+import { reserveProviderCall } from "./budget";
 import { recordVinLookup } from "./log";
 import { validateVin } from "./normalize";
 import { jisuepcProvider } from "./providers/jisuepc";
@@ -27,6 +28,10 @@ const DEFAULT_TIMEOUT_MS = 6000;
 const DEFAULT_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 const DEFAULT_MISS_TTL_SECONDS = 10 * 60;
 const RETRY_BACKOFF_MS = 250;
+const QUOTA_MESSAGE =
+  "今日免费查询额度已用完，请明天再试，或电话联系 158 2899 6681。";
+const MAINTENANCE_MESSAGE =
+  "VIN 查询服务暂时不可用，请稍后再试，或电话联系 158 2899 6681。";
 
 const TRANSIENT_CODES = new Set([
   "TIMEOUT",
@@ -239,6 +244,27 @@ async function lookupVin(
     }
 
     for (let attempt = 0; attempt <= retries; attempt += 1) {
+      if (process.env.VIN_KILL_SWITCH === "1") {
+        throw new VinQueryError({
+          code: "MAINTENANCE",
+          message: MAINTENANCE_MESSAGE,
+          providerId: provider.id,
+          providerLabel: provider.label,
+          retryable: false,
+        });
+      }
+
+      const budget = await reserveProviderCall(provider.id);
+      if (!budget.allowed) {
+        throw new VinQueryError({
+          code: "QUOTA_EXCEEDED",
+          message: QUOTA_MESSAGE,
+          providerId: provider.id,
+          providerLabel: provider.label,
+          retryable: false,
+        });
+      }
+
       const controller = new AbortController();
       const onAbort = () => controller.abort();
       options.signal?.addEventListener("abort", onAbort, { once: true });
@@ -371,11 +397,11 @@ export function explainVinError(error: unknown): {
     case "NOT_FOUND":
       return { code: error.code, message: error.message, shouldFallbackToDemo: false };
     case "QUOTA_EXCEEDED":
-      return {
-        code: error.code,
-        message: "VIN 查询次数已用尽，请联系管理员充值，或电话联系人工按吨计价。",
-        shouldFallbackToDemo: true,
-      };
+      return { code: error.code, message: error.message, shouldFallbackToDemo: false };
+    case "MAINTENANCE":
+      return { code: error.code, message: error.message, shouldFallbackToDemo: false };
+    case "RATE_LIMITED":
+      return { code: error.code, message: error.message, shouldFallbackToDemo: false };
     case "UNAUTHORIZED":
       return {
         code: error.code,
