@@ -140,13 +140,7 @@ function DeductionChip({
   );
 }
 
-export function ReportView({
-  report,
-  onReset,
-}: {
-  report: VinQuoteReport;
-  onReset: () => void;
-}) {
+export function ReportView({ report }: { report: VinQuoteReport }) {
   const [options, setOptions] = useState<QuoteOptions>(() => ({
     ...DEFAULT_QUOTE_OPTIONS,
     missingParts: {},
@@ -204,7 +198,7 @@ export function ReportView({
       ? `${report.dataSource.providerLabel ?? "VIN 渠道"} · 实车档案${
           report.dataSource.cached ? "（缓存）" : "（实时）"
         }`
-      : "内置演示车型";
+      : "VIN 渠道";
 
   return (
     <section id="report" className="scroll-mt-20 pb-28 print:pb-0 sm:pb-32">
@@ -221,16 +215,6 @@ export function ReportView({
         <div className="flex flex-wrap items-center gap-2 no-print">
           <span className="tag text-brand border-brand/40">{dataSourceLabel}</span>
           <span className="tag text-warn">仅 VIN 估算</span>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="btn-secondary text-sm"
-          >
-            打印 / 存为 PDF
-          </button>
-          <button type="button" onClick={onReset} className="btn-secondary text-sm">
-            重新估价
-          </button>
         </div>
       </div>
 
@@ -270,16 +254,9 @@ export function ReportView({
               )}
             </p>
             <p className="mt-2 text-sm text-dim">
-              中值{" "}
-              <span className="mono font-bold text-brand">
-                {quote.netFen === null ? "待确认" : `¥${formatYuan(quote.netFen)}`}
-              </span>
-              {quote.fenPerTon !== null && quote.weightKg !== null ? (
-                <>
-                  {" "}
-                  · ¥{formatYuan(quote.fenPerTon)}/吨 × {(quote.weightKg / 1000).toFixed(3)} 吨
-                </>
-              ) : null}
+              {quote.fenPerTon !== null && quote.weightKg !== null
+                ? `¥${formatYuan(quote.fenPerTon)}/吨 × ${(quote.weightKg / 1000).toFixed(3)} 吨`
+                : "整备质量待确认，需现场称重"}
             </p>
           </div>
           <a href="#pricing-controls" className="btn-secondary text-sm no-print">
@@ -591,11 +568,13 @@ export function ReportView({
       <div className="panel-strong mt-5 p-5 sm:p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
-            <p className="label text-rust">预计到手</p>
-            <p className="mt-1 text-sm text-dim">车值小计 − 服务费小计，与上方区间中值一致。</p>
+            <p className="label text-rust">预计到手区间</p>
+            <p className="mt-1 text-sm text-dim">车值小计 − 服务费小计，得出参考到手区间。</p>
           </div>
           <p className="mono text-2xl font-black text-brand">
-            {quote.netFen === null ? "待称重" : `¥${formatYuan(quote.netFen)}`}
+            {quote.range
+              ? `¥${formatYuan(quote.range.lowFen)}–¥${formatYuan(quote.range.highFen)}`
+              : "待称重"}
           </p>
         </div>
         <div className="mono mt-3 grid gap-2 text-sm sm:grid-cols-3">
@@ -608,17 +587,14 @@ export function ReportView({
             <p className="mt-0.5 font-bold text-rust">−¥{formatYuan(serviceFen)}</p>
           </div>
           <div className="rounded-lg bg-raise/70 px-3 py-2">
-            <p className="text-[10px] tracking-[0.1em] text-dim">预计到手</p>
+            <p className="text-[10px] tracking-[0.1em] text-dim">预计到手区间</p>
             <p className="mt-0.5 font-bold text-brand">
-              {quote.netFen === null ? "待称重" : `¥${formatYuan(quote.netFen)}`}
+              {quote.range
+                ? `¥${formatYuan(quote.range.lowFen)}–¥${formatYuan(quote.range.highFen)}`
+                : "待称重"}
             </p>
           </div>
         </div>
-        {quote.range ? (
-          <p className="mono mt-2 text-[11px] text-dim">
-            参考区间 ¥{formatYuan(quote.range.lowFen)}–¥{formatYuan(quote.range.highFen)}
-          </p>
-        ) : null}
       </div>
 
       {/* ⑥ 待确认项 / 估算假设 */}
@@ -698,12 +674,12 @@ export function ReportView({
           </div>
           <div className="shrink-0 text-right">
             <p className="mono text-2xl font-black leading-tight tracking-tight sm:text-[28px]">
-              {quote.netFen === null ? "待称重" : `¥${formatYuan(quote.netFen)}`}
+              {quote.range
+                ? `¥${formatYuan(quote.range.lowFen)}–¥${formatYuan(quote.range.highFen)}`
+                : "待称重"}
             </p>
             <p className="mono text-[10px] text-dim">
-              {quote.range
-                ? `区间 ¥${formatYuan(quote.range.lowFen)}–¥${formatYuan(quote.range.highFen)}`
-                : "整备质量缺失"}
+              {quote.range ? "仅 VIN 估算 · 未验车" : "整备质量缺失"}
             </p>
           </div>
         </div>

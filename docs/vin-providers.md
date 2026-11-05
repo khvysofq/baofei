@@ -14,7 +14,7 @@ src/lib/vin/
     jisuepc.ts          极速车服 https://www.jisuepc.com/api/vin/
 ```
 
-公开报价页只接收渠道返回的 `VinVehicleSpec`（或内置示例 VIN），再交给
+公开报价页只接收渠道返回的 `VinVehicleSpec`，再交给
 `src/lib/valuation/pricing.ts` 计算参考收购价。渠道无结果或不可用时直接报错，
 不再按 WMI / 年款位编造品牌、车型与整备质量。
 
@@ -57,7 +57,7 @@ src/lib/vin/
 | `JISUEPC_STRICT` | 0 | 1 = 让渠道严格校验 VIN |
 
 未配置任何渠道时，`queryVin` 抛 `NOT_CONFIGURED`，公开报价接口返回 502，
-不会生成推定品牌或假重量。只有示例 VIN `LSVAA49J5C2345678` 使用内置演示车型。
+不会生成推定品牌或假重量；没有示例 VIN 兜底，查不到就明确报错。
 
 ## 新增一个渠道
 

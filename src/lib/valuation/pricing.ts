@@ -678,7 +678,7 @@ export function computeQuote(input: {
     assumptions.push("已确认主要部件齐全，低价端不再预留缺件扣款。");
   }
   if (category?.code === "bus_mid_ac" || category?.code === "bus_large") {
-    assumptions.push("客车价目表为区间价，此处取中值，实际以验车定档为准。");
+    assumptions.push("客车价目表为区间价，实际以验车定档为准。");
   }
 
   let netFen: number | null = null;

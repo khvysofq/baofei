@@ -10,11 +10,7 @@ import {
   type VinQuoteReport,
 } from "@/lib/valuation/pricing";
 import { getActivePricing } from "@/lib/valuation/pricing-store";
-import {
-  DEMO_VIN,
-  buildDemoVehicleProfile,
-  buildProfileFromSpec,
-} from "@/lib/valuation/profile";
+import { buildProfileFromSpec } from "@/lib/valuation/profile";
 
 const PHOTO_DISABLED_MESSAGE = "已停止照片识别，请填写 17 位 VIN";
 
@@ -32,8 +28,8 @@ function manualPricingHint(): string {
 /**
  * 公开报价入口：只接受 JSON `{ vin }`。
  *
- * 车型档案必须来自第三方渠道或内置示例 VIN；渠道无结果/不可用时明确报错，
- * 不再用 WMI / 预设车型兜底编造品牌与重量。
+ * 车型档案必须来自第三方渠道；渠道无结果/不可用时明确报错，
+ * 不用 WMI / 预设车型兜底编造品牌与重量。
  */
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
@@ -67,58 +63,46 @@ export async function POST(request: Request) {
   let vehicle: VehicleProfile;
   let dataSource: ValuationDataSource;
 
-  if (vin === DEMO_VIN) {
-    vehicle = buildDemoVehicleProfile(vin);
+  try {
+    const outcome = await queryVin(vin);
+    vehicle = buildProfileFromSpec(outcome.spec, vin);
     dataSource = {
-      kind: "demo",
-      providerId: "demo",
-      providerLabel: "内置演示车型",
-      cached: false,
-      fetchedAt: new Date().toISOString(),
-      notice: "示例 VIN：使用内置演示车型体验报告；真实报价请填写实际 VIN。",
+      kind: "provider",
+      providerId: outcome.spec.providerId,
+      providerLabel: outcome.spec.providerLabel,
+      cached: outcome.spec.cached,
+      fetchedAt: outcome.spec.fetchedAt,
+      notice: null,
     };
-  } else {
-    try {
-      const outcome = await queryVin(vin);
-      vehicle = buildProfileFromSpec(outcome.spec, vin);
-      dataSource = {
-        kind: "provider",
-        providerId: outcome.spec.providerId,
-        providerLabel: outcome.spec.providerLabel,
-        cached: outcome.spec.cached,
-        fetchedAt: outcome.spec.fetchedAt,
-        notice: null,
-      };
-    } catch (caught) {
-      const explained = explainVinError(caught);
-      if (explained.code === "INVALID_VIN") {
-        return fail(explained.message, 400, explained.code);
-      }
-      if (explained.code === "NOT_FOUND") {
-        await recordVinSearch({
-          vin,
-          isDemo: false,
-          status: "not_found",
-          errorCode: explained.code,
-        });
-        return fail(
-          `没有查到该 VIN 对应的车型信息，请核对 VIN 后重试。${manualPricingHint()}`,
-          404,
-          explained.code,
-        );
-      }
+  } catch (caught) {
+    const explained = explainVinError(caught);
+    if (explained.code === "INVALID_VIN") {
+      return fail(explained.message, 400, explained.code);
+    }
+    if (explained.code === "NOT_FOUND") {
       await recordVinSearch({
         vin,
         isDemo: false,
-        status: "error",
+        status: "not_found",
         errorCode: explained.code,
       });
       return fail(
-        `车型档案查询暂时不可用，请稍后重试。${manualPricingHint()}`,
-        502,
+        `没有查到该 VIN 对应的车型信息，请核对 VIN 后重试。${manualPricingHint()}`,
+        404,
         explained.code,
       );
     }
+    await recordVinSearch({
+      vin,
+      isDemo: false,
+      status: "error",
+      errorCode: explained.code,
+    });
+    return fail(
+      `车型档案查询暂时不可用，请稍后重试。${manualPricingHint()}`,
+      502,
+      explained.code,
+    );
   }
 
   const active = await getActivePricing();
@@ -135,7 +119,7 @@ export async function POST(request: Request) {
     dataSource,
     pricedAt: new Date().toISOString(),
     pricingVersion: active.version,
-    demo: vin === DEMO_VIN,
+    demo: false,
   };
 
   await recordVinSearch({

@@ -7,7 +7,6 @@ import { validateVin } from "@/lib/vin/normalize";
 
 type Status = "idle" | "analyzing" | "done";
 
-const EXAMPLE_VIN = "LSVAA49J5C2345678";
 const STEPS = ["校验 VIN 格式", "查询车型档案", "读取吨价表", "生成参考区间"];
 
 function isVinQuoteReport(value: unknown): value is VinQuoteReport {
@@ -40,14 +39,6 @@ export function ValuationApp() {
     }, 620);
     return () => window.clearInterval(timer);
   }, [status]);
-
-  const reset = useCallback(() => {
-    setReport(null);
-    setError(null);
-    setNotice(null);
-    setStatus("idle");
-    vinRef.current?.focus();
-  }, []);
 
   const submit = useCallback(async () => {
     if (status === "analyzing") return;
@@ -194,7 +185,7 @@ export function ValuationApp() {
                   autoComplete="off"
                   autoCapitalize="characters"
                   spellCheck={false}
-                  placeholder={EXAMPLE_VIN}
+                  placeholder="请输入 17 位车辆识别代号"
                   aria-invalid={vin.length > 0 && !vinValid}
                   aria-describedby="vin-hint"
                   className="input mono mt-2 h-14 text-lg tracking-[0.12em] uppercase"
@@ -225,24 +216,9 @@ export function ValuationApp() {
                       <li>前挡风玻璃左下角（从车外看）</li>
                       <li>机动车登记证书（绿本）</li>
                     </ul>
-                    <p>
-                      共 17 位，只含数字和大写字母，不含 I / O / Q；第 9 位是校验位。
-                      示例：
-                      <span className="mono text-text">{EXAMPLE_VIN}</span>
-                    </p>
+                    <p>共 17 位，只含数字和大写字母，不含 I / O / Q；第 9 位是校验位。</p>
                   </div>
                 </details>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setVin(EXAMPLE_VIN);
-                    setError(null);
-                  }}
-                  className="mt-2 text-xs font-semibold text-brand underline decoration-brand/40 underline-offset-4 hover:decoration-brand"
-                >
-                  填入示例 VIN（大众轿车）
-                </button>
               </div>
 
               {error ? (
@@ -309,7 +285,7 @@ export function ValuationApp() {
                   {notice}
                 </p>
               ) : null}
-              <ReportView key={report.vehicle.vin} report={report} onReset={reset} />
+              <ReportView key={report.vehicle.vin} report={report} />
             </div>
           ) : null}
         </div>

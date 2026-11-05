@@ -43,7 +43,8 @@ ssh publish_web_server '
   set -e
   systemctl stop baofei
   mv /srv/apps/baofei/.env /tmp/baofei.env.keep
-  rm -rf /srv/apps/baofei/*
+  # 必须连隐藏目录一起清掉：.next 里可能有旧的路由缓存，否则可能继续返回旧页面
+  find /srv/apps/baofei -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   tar -xzf /tmp/baofei-app.tgz -C /srv/apps/baofei --strip-components=1
   mv /tmp/baofei.env.keep /srv/apps/baofei/.env
   chmod 600 /srv/apps/baofei/.env
