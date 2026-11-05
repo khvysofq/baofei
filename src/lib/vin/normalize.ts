@@ -337,7 +337,7 @@ export function vehicleTypeLabel(
     case "sedan":
       return "小型轿车";
     case "suv":
-      return "小型普通客车";
+      return "小型越野客车";
     case "mpv":
       return "小型普通客车";
     case "van":

@@ -9,6 +9,7 @@ import {
   normalizeVin,
   parsePriceFen,
   validateVin,
+  vehicleTypeLabel,
 } from "@/lib/vin/normalize";
 import { VinQueryError, type VinProvider } from "@/lib/vin/types";
 
@@ -353,5 +354,12 @@ describe("真实车型档案参与残值测算", () => {
 
     expect(report.dataSource.kind).toBe("demo");
     expect(report.dataSource.notice).toContain("渠道暂时不可用");
+  });
+});
+describe("车型展示名称", () => {
+  it("越野车与小型普通客车分开显示", () => {
+    expect(vehicleTypeLabel("suv", {})).toBe("小型越野客车");
+    expect(vehicleTypeLabel("mpv", {})).toBe("小型普通客车");
+    expect(vehicleTypeLabel("van", { isCommercial: false })).toBe("小型普通客车");
   });
 });
