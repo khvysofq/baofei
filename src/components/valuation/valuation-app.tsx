@@ -312,6 +312,16 @@ export function ValuationApp() {
           <p>
             <span className="font-bold text-text">报废车参考收购价</span> · 四川地区报废机动车回收服务
           </p>
+          <p className="mono text-[10px] tracking-[0.08em]">
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-brand"
+            >
+              京ICP备2023038384号
+            </a>
+          </p>
           <p className="mono text-[10px] tracking-[0.08em]">SAMPLE BUILD · 2026</p>
         </div>
       </footer>

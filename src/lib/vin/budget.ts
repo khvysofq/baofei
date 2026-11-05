@@ -17,7 +17,7 @@ export type ProviderBudget = {
   remaining: number;
 };
 
-const DEFAULT_DAILY_LIMIT = 300;
+const DEFAULT_DAILY_LIMIT = 5000;
 
 export function dailyCallLimit(): number {
   const raw = Number(process.env.VIN_DAILY_CALL_LIMIT);

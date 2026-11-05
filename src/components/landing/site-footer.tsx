@@ -17,6 +17,16 @@ export function SiteFooter() {
         <p className="mono mt-6 text-[11px] leading-relaxed tracking-[0.04em] text-dim">
           © 2026 报废助手
         </p>
+        <p className="mono mt-1 text-[11px] leading-relaxed tracking-[0.04em] text-dim">
+          <a
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-brand"
+          >
+            京ICP备2023038384号
+          </a>
+        </p>
       </div>
     </footer>
   );

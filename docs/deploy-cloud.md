@@ -92,7 +92,7 @@ VIN 查询会真实消耗第三方额度，公开接口做了三层保护：
    - `VIN_RATE_LIMIT_PER_DAY`（默认 120）
    - 超出返回 `429 RATE_LIMITED` + `Retry-After`，正常用户几乎不会触发。
 2. **每日渠道总预算**（数据库 `provider_usage`，跨重启保留）
-   - `VIN_DAILY_CALL_LIMIT`（默认 300 次/天，约 ¥13.5）
+   - `VIN_DAILY_CALL_LIMIT`（默认 5000 次/天，约 ¥225）
    - 只有缓存未命中、真正要打渠道时才原子预占一次；缓存命中不占预算。
    - 超限后所有未缓存 VIN 返回 `503 QUOTA_EXCEEDED`，已缓存车辆仍可正常查询。
 3. **紧急开关**
