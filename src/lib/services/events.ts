@@ -1,4 +1,4 @@
-import type { PoolClient } from "pg";
+import type { DbClient } from "@/lib/db";
 import { query, withTransaction } from "@/lib/db";
 import type { EventRecord, EventSource } from "@/lib/types";
 
@@ -14,7 +14,7 @@ export type EventInput = {
  * 调用方必须已在事务中锁定案件行（appendEvent 内部会锁）。
  */
 export async function appendEvent(
-  client: PoolClient,
+  client: DbClient,
   caseId: string,
   input: EventInput,
 ): Promise<EventRecord> {

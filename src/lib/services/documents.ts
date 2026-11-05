@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PoolClient } from "pg";
+import type { DbClient } from "@/lib/db";
 import type {
   DocumentIssue,
   DocumentType,
@@ -74,7 +74,7 @@ export async function getDocumentsView(caseId: string) {
   };
 }
 
-async function bumpMaterials(client: PoolClient, caseId: string): Promise<number> {
+async function bumpMaterials(client: DbClient, caseId: string): Promise<number> {
   const result = await client.query(
     `UPDATE cases SET materials_version = materials_version + 1, updated_at = now()
      WHERE id = $1 RETURNING materials_version`,

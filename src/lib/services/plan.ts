@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PoolClient } from "pg";
+import type { DbClient } from "@/lib/db";
 import type {
   AppointmentRecord,
   CaseField,
@@ -356,7 +356,7 @@ export async function resolveTask(
   if (!note.trim()) throw new Error("解决说明不能为空");
   const { withTransaction } = await import("@/lib/db");
   const { appendEvent } = await import("@/lib/services/events");
-  await withTransaction(async (client: PoolClient) => {
+  await withTransaction(async (client: DbClient) => {
     const state = await loadCaseState(caseId, client);
     if (!state) throw new Error("案件不存在");
     const task = state.tasks.find((t) => t.kind === kind);

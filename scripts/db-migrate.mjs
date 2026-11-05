@@ -1,26 +1,20 @@
 // 幂等迁移：按文件名顺序执行 db/migrations/*.sql，已执行版本记录在 schema_migrations。
+// 支持 pg 与 pglite 两种驱动，见 scripts/db-connect.mjs。
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import pg from "pg";
-import { loadEnv, rootDir } from "./load-env.mjs";
-
-loadEnv();
-
-if (!process.env.DATABASE_URL) {
-  console.error("缺少 DATABASE_URL（请检查 .env.local）");
-  process.exit(1);
-}
+import { connectDb } from "./db-connect.mjs";
+import { rootDir } from "./load-env.mjs";
 
 const dir = join(rootDir, "db", "migrations");
 const files = readdirSync(dir)
   .filter((f) => f.endsWith(".sql"))
   .sort();
 
-const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
-await client.connect();
+const db = await connectDb();
+console.log(`驱动：${db.driver}`);
 
 try {
-  await client.query(`
+  await db.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version text PRIMARY KEY,
       applied_at timestamptz NOT NULL DEFAULT now()
@@ -28,7 +22,7 @@ try {
   `);
 
   for (const file of files) {
-    const { rows } = await client.query(
+    const { rows } = await db.query(
       "SELECT 1 FROM schema_migrations WHERE version = $1",
       [file],
     );
@@ -37,18 +31,18 @@ try {
       continue;
     }
     const sql = readFileSync(join(dir, file), "utf8");
-    await client.query("BEGIN");
+    await db.exec("BEGIN");
     try {
-      await client.query(sql);
-      await client.query("INSERT INTO schema_migrations(version) VALUES ($1)", [file]);
-      await client.query("COMMIT");
+      await db.exec(sql);
+      await db.query("INSERT INTO schema_migrations(version) VALUES ($1)", [file]);
+      await db.exec("COMMIT");
       console.log(`apply ${file}`);
     } catch (err) {
-      await client.query("ROLLBACK");
+      await db.exec("ROLLBACK");
       throw err;
     }
   }
   console.log("迁移完成");
 } finally {
-  await client.end();
+  await db.close();
 }

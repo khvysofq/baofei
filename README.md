@@ -58,6 +58,25 @@ node scripts/db-seed.mjs        # 重建 demo-sc-v1.1 种子；可重复跑
 pnpm dev --port 10802           # http://127.0.0.1:10802
 ```
 
+### 轻量模式（无 Postgres / Redis / S3）
+
+不配 `DATABASE_URL`、`REDIS_URL`、`S3_ENDPOINT` 时会自动使用：嵌入式 Postgres
+（PGlite，数据在 `.data/pglite`）、进程内存缓存、本地生成的样例 SVG。适合单机小内存部署。
+
+```bash
+DB_DRIVER=pglite PGLITE_DATA_DIR=.data/pglite node scripts/db-migrate.mjs
+DB_DRIVER=pglite PGLITE_DATA_DIR=.data/pglite node scripts/db-seed.mjs
+pnpm dev --port 10802
+```
+
+已有 Postgres 数据可以整表搬到 PGlite：
+
+```bash
+DB_DRIVER=pglite PGLITE_DATA_DIR=.data/pglite node scripts/db-migrate.mjs
+DB_DRIVER=pglite PGLITE_DATA_DIR=.data/pglite node scripts/db-seed.mjs
+node scripts/db-copy.mjs --data-dir .data/pglite   # 源库读 .env.local 的 DATABASE_URL
+```
+
 生产构建：
 
 ```bash
@@ -167,6 +186,12 @@ API 前缀 `/api`：`intake/parse`、`cases`、`case`、`case/fields`、`case/co
 `docker-compose.yml` 使用外部 `shared` 网络与 `env_file: /srv/apps/baofei/.env`。
 容器内的 `DATABASE_URL` / `REDIS_URL` / `S3_ENDPOINT` 应指向 `postgres:5432`、
 `valkey:6379`、`garage:3900`（部署环境文件负责，不在仓库写死连接串）。
+
+## 单机部署（standalone + PGlite）
+
+云端小内存机器不需要单独的数据库、缓存、对象存储进程：`output: "standalone"` 打包后由
+systemd 直接运行 `node server.js`，业务数据落在 `PGLITE_DATA_DIR`。完整步骤见
+`docs/deploy-cloud.md`。
 
 ## 已知边界 / 需人工确认
 

@@ -1,5 +1,4 @@
-import type { Pool, PoolClient, QueryResult } from "pg";
-import { getPool } from "@/lib/db";
+import { getDbClient, type DbClient } from "@/lib/db";
 import type {
   AppointmentRecord,
   CaseField,
@@ -24,10 +23,10 @@ import {
   mapVehicle,
 } from "@/lib/services/mappers";
 
-export type Runner = Pick<Pool | PoolClient, "query">;
+export type Runner = Pick<DbClient, "query">;
 
 export function db(runner?: Runner): Runner {
-  return runner ?? getPool();
+  return runner ?? getDbClient();
 }
 
 async function rows(
@@ -35,7 +34,7 @@ async function rows(
   sql: string,
   params: unknown[] = [],
 ): Promise<Record<string, unknown>[]> {
-  const result: QueryResult = await db(runner).query(sql, params);
+  const result = await db(runner).query(sql, params);
   return result.rows;
 }
 
@@ -49,7 +48,7 @@ export async function loadCase(
 
 export async function lockCase(
   caseId: string,
-  client: PoolClient,
+  client: DbClient,
 ): Promise<CaseRecord | null> {
   const r = await client.query("SELECT * FROM cases WHERE id = $1 FOR UPDATE", [caseId]);
   return r.rows.length ? mapCase(r.rows[0]) : null;

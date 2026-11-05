@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PoolClient } from "pg";
+import type { DbClient } from "@/lib/db";
 import { calcNetFen } from "@/lib/domain/money";
 import type { QuoteRecord, RegionValue } from "@/lib/types";
 import { loadActiveQuotes, loadCase, loadFields, fieldValue } from "@/lib/services/store";
@@ -61,7 +61,7 @@ export function quoteFees(
   };
 }
 
-async function loadTemplates(client: PoolClient): Promise<TemplateRow[]> {
+async function loadTemplates(client: DbClient): Promise<TemplateRow[]> {
   const result = await client.query(
     "SELECT provider_id, name, gross_fen, tow_fen, service_fen, conditions FROM quote_templates ORDER BY provider_id",
   );
@@ -76,7 +76,7 @@ async function loadTemplates(client: PoolClient): Promise<TemplateRow[]> {
 }
 
 export async function createQuotesInTx(
-  client: PoolClient,
+  client: DbClient,
   caseId: string,
   profileVersion: number,
   vehicleLocation: RegionValue | null,
@@ -145,7 +145,7 @@ function mapRow(row: Record<string, unknown>): QuoteRecord {
 
 /** 车辆所在地或行驶状况变化后：旧版本保留，生成新版本并要求重新确认。 */
 export async function regenerateQuotesInTx(
-  client: PoolClient,
+  client: DbClient,
   caseId: string,
   profileVersion: number,
   vehicleLocation: RegionValue | null,

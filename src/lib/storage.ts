@@ -12,6 +12,20 @@ export type SampleId = (typeof SAMPLE_IDS)[number];
 
 const BUCKET = process.env.S3_BUCKET || "baofei";
 
+/**
+ * 存储驱动：默认在未配置 S3_ENDPOINT 时走「本地生成」。
+ * 样例证件本来就是代码绘制的 SVG，本地模式直接返回字节，不需要对象存储。
+ */
+function storageDriver(): "local" | "s3" {
+  const mode = process.env.STORAGE_DRIVER?.trim().toLowerCase();
+  if (mode === "local" || mode === "s3") return mode;
+  return process.env.S3_ENDPOINT ? "s3" : "local";
+}
+
+export function isLocalStorage(): boolean {
+  return storageDriver() === "local";
+}
+
 let client: S3Client | null = null;
 
 function getS3(): S3Client {
@@ -123,10 +137,12 @@ async function ensureBucket(): Promise<void> {
   }
 }
 
-/** 幂等：对象不存在时生成并上传。 */
+/** 幂等：对象不存在时生成并上传。本地模式下不落盘。 */
 export async function ensureSampleAsset(sampleId: SampleId): Promise<string> {
-  const s3 = getS3();
   const key = sampleAssetKey(sampleId);
+  if (storageDriver() === "local") return key;
+
+  const s3 = getS3();
   try {
     await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
     return key;
@@ -146,14 +162,22 @@ export async function ensureSampleAsset(sampleId: SampleId): Promise<string> {
 }
 
 export async function ensureAllSampleAssets(): Promise<void> {
+  if (storageDriver() === "local") return;
   await Promise.all(SAMPLE_IDS.map((id) => ensureSampleAsset(id).catch(() => null)));
 }
 
-export async function getSampleAsset(sampleId: SampleId) {
+/** 读取样例字节。本地模式直接生成，S3 模式从对象存储取。 */
+export async function readSampleAsset(sampleId: SampleId): Promise<Uint8Array> {
+  if (storageDriver() === "local") {
+    return new TextEncoder().encode(buildSampleSvg(sampleId));
+  }
+
   const key = await ensureSampleAsset(sampleId);
-  return getS3().send(
+  const object = await getS3().send(
     new GetObjectCommand({ Bucket: BUCKET, Key: key }),
   );
+  if (!object.Body) throw new Error("样例对象为空");
+  return object.Body.transformToByteArray();
 }
 
 export function isSampleId(value: string): value is SampleId {

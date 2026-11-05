@@ -1,25 +1,18 @@
 // 重建 demo-sc-v1.1 种子：先清空业务与配置表，再写入固定数据。
-// 可重复执行，执行后结果完全一致。
+// 可重复执行，执行后结果完全一致。支持 pg 与 pglite。
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import pg from "pg";
-import { loadEnv, rootDir } from "./load-env.mjs";
-
-loadEnv();
-
-if (!process.env.DATABASE_URL) {
-  console.error("缺少 DATABASE_URL（请检查 .env.local）");
-  process.exit(1);
-}
+import { connectDb } from "./db-connect.mjs";
+import { rootDir } from "./load-env.mjs";
 
 const seed = JSON.parse(readFileSync(join(rootDir, "db", "seed-data.json"), "utf8"));
-const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
-await client.connect();
+const db = await connectDb();
+console.log(`驱动：${db.driver}`);
 
 try {
-  await client.query("BEGIN");
+  await db.exec("BEGIN");
 
-  await client.query(`
+  await db.exec(`
     TRUNCATE TABLE
       events, evidence, appointments, quotes, tasks, documents,
       vehicles, case_fields, cases, subsidy_contexts,
@@ -28,7 +21,7 @@ try {
   `);
 
   for (const s of seed.scenarios) {
-    await client.query(
+    await db.query(
       `INSERT INTO scenario_templates (id, version, name, intake_text, payload)
        VALUES ($1, $2, $3, $4, $5)`,
       [s.id, seed.version, s.name, s.intakeText, JSON.stringify(s.payload)],
@@ -36,7 +29,7 @@ try {
   }
 
   for (const s of seed.samples) {
-    await client.query(
+    await db.query(
       `INSERT INTO document_samples
          (id, label, doc_type, quality, fields, original_fields, issues, asset_key)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -54,7 +47,7 @@ try {
   }
 
   for (const q of seed.quoteTemplates) {
-    await client.query(
+    await db.query(
       `INSERT INTO quote_templates
          (provider_id, version, name, gross_fen, tow_fen, service_fen, conditions, demo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, true)`,
@@ -71,7 +64,7 @@ try {
   }
 
   for (const p of seed.policies) {
-    await client.query(
+    await db.query(
       `INSERT INTO city_policy_config
          (region, scope, source_ids, effective_from, effective_to, checked_at, version, status, notes, aliases)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
@@ -90,13 +83,13 @@ try {
     );
   }
 
-  await client.query("COMMIT");
+  await db.exec("COMMIT");
   console.log(
     `种子完成：${seed.version} · ${seed.scenarios.length} 个场景 · ${seed.quoteTemplates.length} 份报价 · ${seed.samples.length} 份样例`,
   );
 } catch (err) {
-  await client.query("ROLLBACK");
+  await db.exec("ROLLBACK");
   throw err;
 } finally {
-  await client.end();
+  await db.close();
 }

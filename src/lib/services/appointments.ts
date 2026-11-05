@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PoolClient } from "pg";
+import type { DbClient } from "@/lib/db";
 import {
   canChangeBooking,
   deriveSettlementStatus,
@@ -156,7 +156,7 @@ export type ConfirmAppointmentInput = {
   drivable: boolean | null;
 };
 
-async function validateBooking(client: PoolClient, caseId: string) {
+async function validateBooking(client: DbClient, caseId: string) {
   const state = await loadCaseState(caseId, client);
   if (!state) throw new Error("案件不存在");
   if (state.case.handedOverAt) {

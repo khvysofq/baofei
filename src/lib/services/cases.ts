@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PoolClient } from "pg";
+import type { DbClient } from "@/lib/db";
 import type {
   CoreFieldName,
   DocumentsStatus,
@@ -290,7 +290,7 @@ export async function confirmFields(caseId: string): Promise<void> {
 
 /** 重置业务数据与缓存，固定配置和 S3 样例保留。 */
 export async function resetDemo(): Promise<void> {
-  await withTransaction(async (client: PoolClient) => {
+  await withTransaction(async (client: DbClient) => {
     await client.query(`
       TRUNCATE TABLE
         events, evidence, appointments, quotes, tasks, documents,

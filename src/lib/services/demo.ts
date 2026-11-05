@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PoolClient } from "pg";
+import type { DbClient } from "@/lib/db";
 import type { EvidenceType, EvidenceStatus, RegionValue, SubsidyContext } from "@/lib/types";
 import { withTransaction } from "@/lib/db";
 import { formatYuan } from "@/lib/domain/money";
@@ -39,7 +39,7 @@ const STAGE_EVENT: Record<DemoStageId, string> = {
 };
 
 async function upsertEvidence(
-  client: PoolClient,
+  client: DbClient,
   caseId: string,
   vehicleId: string,
   type: EvidenceType,
@@ -57,7 +57,7 @@ async function upsertEvidence(
   );
 }
 
-async function ensureAppointment(client: PoolClient, caseId: string): Promise<void> {
+async function ensureAppointment(client: DbClient, caseId: string): Promise<void> {
   const active = await loadActiveAppointment(caseId, client);
   if (active) return;
   const state = await loadCaseState(caseId, client);

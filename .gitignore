@@ -20,6 +20,10 @@
 # production
 /build
 
+# 单机部署产物与嵌入式数据库
+/.deploy/
+/.data/
+
 # misc
 .DS_Store
 *.pem

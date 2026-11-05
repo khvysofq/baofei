@@ -1,6 +1,6 @@
 import { fail } from "@/lib/api";
 import { query } from "@/lib/db";
-import { getSampleAsset, isSampleId, SAMPLE_IDS } from "@/lib/storage";
+import { isSampleId, readSampleAsset, SAMPLE_IDS } from "@/lib/storage";
 
 const CACHE_HEADERS = {
   "Content-Type": "image/svg+xml; charset=utf-8",
@@ -36,10 +36,8 @@ export async function GET(
   }
 
   try {
-    const object = await getSampleAsset(sampleId);
-    if (!object.Body) return fail(new Error("证件样例暂不可用"), 502);
-    const stream = object.Body.transformToWebStream();
-    return new Response(stream, { headers: CACHE_HEADERS });
+    const bytes = await readSampleAsset(sampleId);
+    return new Response(bytes as unknown as BodyInit, { headers: CACHE_HEADERS });
   } catch {
     return fail(new Error("证件样例暂不可用，请稍后重试。"), 502);
   }

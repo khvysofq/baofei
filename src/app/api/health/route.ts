@@ -1,6 +1,6 @@
 import { ok } from "@/lib/api";
-import { query } from "@/lib/db";
-import { ensureAllSampleAssets } from "@/lib/storage";
+import { dbDriver, query } from "@/lib/db";
+import { ensureAllSampleAssets, isLocalStorage } from "@/lib/storage";
 
 export async function GET() {
   let database = false;
@@ -22,6 +22,9 @@ export async function GET() {
     demo: true,
     scenarioVersion: "demo-sc-v1.1",
     database,
+    dbDriver: dbDriver(),
     storage,
+    storageDriver: isLocalStorage() ? "local" : "s3",
+    cacheDriver: process.env.REDIS_URL && process.env.CACHE_DRIVER !== "memory" ? "redis" : "memory",
   });
 }
