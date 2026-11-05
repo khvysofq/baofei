@@ -22,7 +22,7 @@ function fail(error: string, status: number, code?: string) {
 }
 
 function manualPricingHint(): string {
-  return "如确认 VIN 无误，可电话联系人工按吨计价。";
+  return "如确认 VIN 无误，可电话联系 158 2899 6681。";
 }
 
 /**

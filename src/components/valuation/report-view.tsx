@@ -14,7 +14,7 @@ import {
 
 const WEIGHT_SOURCE_LABEL: Record<WeightSource, string> = {
   vin: "VIN 档案",
-  estimated: "推定值",
+  estimated: "用户预估",
   missing: "待称重",
 };
 
@@ -145,15 +145,28 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
     ...DEFAULT_QUOTE_OPTIONS,
     missingParts: {},
   }));
+  const [estimatedWeight, setEstimatedWeight] = useState("");
+
+  const estimateRaw = estimatedWeight.trim() === "" ? null : Number(estimatedWeight);
+  const estimateKg =
+    estimateRaw !== null &&
+    Number.isFinite(estimateRaw) &&
+    estimateRaw >= 300 &&
+    estimateRaw <= 6000
+      ? Math.round(estimateRaw)
+      : null;
 
   const quote = useMemo(
     () =>
       computeQuote({
-        vehicle: report.vehicle,
+        vehicle:
+          estimateKg !== null
+            ? { ...report.vehicle, weightKg: estimateKg, weightSource: "estimated" }
+            : report.vehicle,
         pricing: report.pricing,
         options,
       }),
-    [report.vehicle, report.pricing, options],
+    [report.vehicle, report.pricing, options, estimateKg],
   );
 
   const { vehicle, pricing } = report;
@@ -162,8 +175,8 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
     (item) => item.scope === "all" || item.scope === scope,
   );
   const steelPreviewFen =
-    vehicle.weightKg !== null
-      ? Math.round((pricing.steelRimDiscountFenPerTon * vehicle.weightKg) / 1000)
+    quote.weightKg !== null
+      ? Math.round((pricing.steelRimDiscountFenPerTon * quote.weightKg) / 1000)
       : null;
   const steelAvailable = quote.category === "sedan_suv";
 
@@ -256,8 +269,42 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
             <p className="mt-2 text-sm text-dim">
               {quote.fenPerTon !== null && quote.weightKg !== null
                 ? `¥${formatYuan(quote.fenPerTon)}/吨 × ${(quote.weightKg / 1000).toFixed(3)} 吨`
-                : "整备质量待确认，需现场称重"}
+                : "整备质量待确认，可填写预估重量先做估算"}
             </p>
+
+            {vehicle.weightKg === null && quote.pricingMode !== "unit" ? (
+              <div className="mt-3 rounded-lg border border-line bg-raise/60 p-3">
+                <label
+                  htmlFor="estimated-weight"
+                  className="text-xs font-semibold text-text"
+                >
+                  整备质量未知，可填写预估重量
+                </label>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <input
+                    id="estimated-weight"
+                    type="number"
+                    inputMode="numeric"
+                    min={300}
+                    max={6000}
+                    step={10}
+                    value={estimatedWeight}
+                    onChange={(event) => setEstimatedWeight(event.target.value)}
+                    placeholder="例如 1500"
+                    className="input mono h-10 w-32 text-sm"
+                  />
+                  <span className="text-xs text-dim">kg</span>
+                  <span className="text-[11px] text-dim">
+                    仅用于临时估价，最终以现场地磅为准
+                  </span>
+                </div>
+                {estimatedWeight.trim() !== "" && estimateKg === null ? (
+                  <p className="mt-1 text-[11px] text-warn">
+                    请输入 300–6000 kg 之间的数字
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <a href="#pricing-controls" className="btn-secondary text-sm no-print">
             调整车值与服务费

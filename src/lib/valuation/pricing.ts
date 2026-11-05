@@ -604,7 +604,7 @@ export function computeQuote(input: {
   const unresolved: string[] = [];
   const assumptions: string[] = [
     "仅凭 VIN 估算，未验车、未称重；最终以现场验车和地磅称重结果为准。",
-    "价格按回收企业吨价表计算，区间已包含重量与行情波动。",
+    "价格按当地实时回收行情计算，区间已包含重量与行情波动。",
   ];
   if (pricing.marketAdjustmentPct !== 0) {
     assumptions.push(
@@ -672,7 +672,7 @@ export function computeQuote(input: {
   }
 
   if (weightSource === "estimated") {
-    assumptions.push("整备质量使用推定值，未按实车称重。");
+    assumptions.push("整备质量使用用户预估重量，未按实车称重。");
   }
   if (options.partsConfirmed) {
     assumptions.push("已确认主要部件齐全，低价端不再预留缺件扣款。");
