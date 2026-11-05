@@ -76,10 +76,13 @@ function providerLabel(provider: string | null): string {
   return provider;
 }
 
-function StatusTag({ status }: { status: "ok" | "not_found" | "error" }) {
-  if (status === "ok") return <span className="tag text-brand">成功</span>;
-  if (status === "not_found") return <span className="tag text-warn">未查到</span>;
-  return <span className="tag text-danger">渠道异常</span>;
+function statusMeta(status: "ok" | "not_found" | "error"): {
+  label: string;
+  className: string;
+} {
+  if (status === "ok") return { label: "成功", className: "text-brand" };
+  if (status === "not_found") return { label: "未查到", className: "text-warn" };
+  return { label: "渠道异常", className: "text-danger" };
 }
 
 function Kpi({
@@ -366,16 +369,13 @@ export function StatsApp() {
                 </p>
               ) : (
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[900px] text-left text-xs">
+                  <table className="w-full min-w-[620px] text-left text-xs">
                     <thead>
                       <tr className="border-b border-line text-dim">
                         <th className="py-2 pr-3 font-semibold">时间</th>
                         <th className="py-2 pr-3 font-semibold">VIN</th>
-                        <th className="py-2 pr-3 font-semibold">车型</th>
-                        <th className="py-2 pr-3 font-semibold">参考区间</th>
-                        <th className="py-2 pr-3 font-semibold">来源</th>
-                        <th className="py-2 pr-3 font-semibold">状态</th>
-                        <th className="py-2 font-semibold">价格版本</th>
+                        <th className="py-2 pr-3 font-semibold">查询价格</th>
+                        <th className="py-2 font-semibold">车型</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -389,15 +389,20 @@ export function StatsApp() {
                             {row.isDemo ? (
                               <span className="ml-1.5 text-[10px] font-normal text-warn">示例</span>
                             ) : null}
-                          </td>
-                          <td className="py-2.5 pr-3">
-                            <p className="font-semibold">{row.brandModel ?? "—"}</p>
-                            <p className="text-[10px] text-dim">{row.vehicleType ?? "—"}</p>
+                            <p className="mt-0.5 text-[10px] font-normal text-dim">
+                              {providerLabel(row.provider)} ·{" "}
+                              <span className={statusMeta(row.status).className}>
+                                {statusMeta(row.status).label}
+                              </span>
+                              {row.errorCode ? (
+                                <span className="mono ml-1">{row.errorCode}</span>
+                              ) : null}
+                            </p>
                           </td>
                           <td className="mono py-2.5 pr-3 whitespace-nowrap">
                             {row.quote.lowFen !== null && row.quote.highFen !== null ? (
                               <>
-                                <p className="font-semibold">
+                                <p className="text-sm font-black text-brand">
                                   ¥{formatYuan(row.quote.lowFen)}–¥{formatYuan(row.quote.highFen)}
                                 </p>
                                 {row.quote.midFen !== null ? (
@@ -407,22 +412,12 @@ export function StatsApp() {
                                 ) : null}
                               </>
                             ) : (
-                              <span className="text-dim">待称重</span>
+                              <span className="text-dim">价格待确认</span>
                             )}
                           </td>
-                          <td className="py-2.5 pr-3 whitespace-nowrap text-dim">
-                            {providerLabel(row.provider)}
-                          </td>
-                          <td className="py-2.5 pr-3 whitespace-nowrap">
-                            <StatusTag status={row.status} />
-                            {row.errorCode ? (
-                              <span className="mono ml-1 text-[10px] text-dim">
-                                {row.errorCode}
-                              </span>
-                            ) : null}
-                          </td>
-                          <td className="mono py-2.5 text-dim">
-                            {row.pricingVersion ? `v${row.pricingVersion}` : "—"}
+                          <td className="py-2.5">
+                            <p className="font-semibold">{row.brandModel ?? "—"}</p>
+                            <p className="text-[10px] text-dim">{row.vehicleType ?? "—"}</p>
                           </td>
                         </tr>
                       ))}
