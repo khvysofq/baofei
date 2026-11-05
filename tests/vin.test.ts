@@ -3,6 +3,7 @@ import { buildValuationReport } from "@/lib/valuation/engine";
 import { jisuepcProvider } from "@/lib/vin/providers/jisuepc";
 import { listVinProviders, queryVin, registerVinProvider } from "@/lib/vin";
 import {
+  classifyVehicle,
   computeVinCheckDigit,
   isValidVin,
   normalizeEmission,
@@ -361,5 +362,13 @@ describe("车型展示名称", () => {
     expect(vehicleTypeLabel("suv", {})).toBe("小型越野客车");
     expect(vehicleTypeLabel("mpv", {})).toBe("小型普通客车");
     expect(vehicleTypeLabel("van", { isCommercial: false })).toBe("小型普通客车");
+  });
+});
+
+describe("车型分类", () => {
+  it("小型普通客车不再误判为中型客车", () => {
+    expect(classifyVehicle({ bodyType: "客车", modelName: "五菱宏光 2014款", seats: 8 })).toBe("van");
+    expect(classifyVehicle({ bodyType: "小型普通客车", seats: 5 })).toBe("other");
+    expect(classifyVehicle({ bodyType: "中型客车", seats: 12 })).toBe("bus");
   });
 });

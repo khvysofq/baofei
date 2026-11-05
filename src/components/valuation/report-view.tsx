@@ -170,6 +170,9 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
   );
 
   const { vehicle, pricing } = report;
+  const weightSourceText = quote.weightRangeKg
+    ? `系统预估 ${quote.weightRangeKg.minKg}–${quote.weightRangeKg.maxKg} kg`
+    : WEIGHT_SOURCE_LABEL[quote.weightSource];
   const scope = quote.category ? deductionScopeFor(quote.category) : "all";
   const catalog = pricing.deductions.filter(
     (item) => item.scope === "all" || item.scope === scope,
@@ -268,7 +271,11 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
             </p>
             <p className="mt-2 text-sm text-dim">
               {quote.fenPerTon !== null && quote.weightKg !== null
-                ? `¥${formatYuan(quote.fenPerTon)}/吨 × ${(quote.weightKg / 1000).toFixed(3)} 吨`
+                ? `¥${formatYuan(quote.fenPerTon)}/吨 × ${(quote.weightKg / 1000).toFixed(3)} 吨${
+                    quote.weightRangeKg
+                      ? `（系统按车型预估 ${quote.weightRangeKg.minKg}–${quote.weightRangeKg.maxKg} kg 取中值）`
+                      : ""
+                  }`
                 : "整备质量待确认，可填写预估重量先做估算"}
             </p>
 
@@ -278,8 +285,15 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
                   htmlFor="estimated-weight"
                   className="text-xs font-semibold text-text"
                 >
-                  整备质量未知，可填写预估重量
+                  {quote.weightRangeKg
+                    ? `系统已按 ${quote.weightKg} kg 预估，可填写实际整备质量校准`
+                    : "整备质量未知，可填写预估重量"}
                 </label>
+                {quote.weightRangeKg ? (
+                  <p className="mt-1 text-[11px] text-dim">
+                    预估范围 {quote.weightRangeKg.minKg}–{quote.weightRangeKg.maxKg} kg；最终以现场地磅为准。
+                  </p>
+                ) : null}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <input
                     id="estimated-weight"
@@ -290,7 +304,7 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
                     step={10}
                     value={estimatedWeight}
                     onChange={(event) => setEstimatedWeight(event.target.value)}
-                    placeholder="例如 1500"
+                    placeholder={`例如 ${quote.weightKg ?? 1500}`}
                     className="input mono h-10 w-32 text-sm"
                   />
                   <span className="text-xs text-dim">kg</span>
@@ -346,7 +360,7 @@ export function ReportView({ report }: { report: VinQuoteReport }) {
               "整备质量",
               quote.weightKg === null
                 ? "未知"
-                : `${quote.weightKg} kg（${WEIGHT_SOURCE_LABEL[quote.weightSource]}）`,
+                : `${quote.weightKg} kg（${weightSourceText}）`,
             ],
             [
               "定价版本",

@@ -156,6 +156,8 @@ export type QuoteResult = {
   pricingMode: "ton" | "unit";
   weightKg: number | null;
   weightSource: WeightSource;
+  /** 系统按车型预估重量时的区间；用户手填或 VIN 实测时为 null。 */
+  weightRangeKg: { minKg: number; maxKg: number } | null;
   fenPerTon: number | null;
   /** 铁轮毂前的吨价车值。 */
   baseValueFen: number | null;
@@ -451,6 +453,33 @@ export function resolvePricingCategory(input: {
   return null;
 }
 
+/**
+ * 未查到整备质量时的车型预估重量（kg）。
+ * 只用于先给出参考区间；报告会标明「系统预估」，并提示现场称重多退少补。
+ * 区间刻意放宽，避免把预估值包装成实测值。
+ */
+export type EstimatedWeight = { minKg: number; midKg: number; maxKg: number };
+
+const ESTIMATED_WEIGHT_BY_CATEGORY: Partial<
+  Record<PricingCategoryCode, EstimatedWeight>
+> = {
+  sedan_suv: { minKg: 1200, midKg: 1500, maxKg: 2000 },
+  business: { minKg: 1600, midKg: 2000, maxKg: 2500 },
+  van_pickup: { minKg: 1100, midKg: 1500, maxKg: 2000 },
+  truck: { minKg: 2500, midKg: 6000, maxKg: 12000 },
+  bus_mid_ac: { minKg: 4500, midKg: 5500, maxKg: 7000 },
+  bus_mid_no_ac: { minKg: 4500, midKg: 5500, maxKg: 7000 },
+  bus_large: { minKg: 10000, midKg: 13000, maxKg: 17000 },
+  tractor: { minKg: 7000, midKg: 8500, maxKg: 10000 },
+};
+
+export function estimateWeightForCategory(
+  code: PricingCategoryCode | null | undefined,
+): EstimatedWeight | null {
+  if (!code) return null;
+  return ESTIMATED_WEIGHT_BY_CATEGORY[code] ?? null;
+}
+
 /** 选档：上限升序，命中第一档；都超过时取最后一档。 */
 export function pickPricingTier(
   category: PricingCategory,
@@ -593,13 +622,20 @@ export function computeQuote(input: {
     ? pricing.categories.find((item) => item.code === resolved) ?? null
     : null;
 
-  const weightKg =
+  const rawWeightKg =
     vehicle.weightKg !== null &&
     Number.isFinite(vehicle.weightKg) &&
     vehicle.weightKg > 0
       ? vehicle.weightKg
       : null;
-  const weightSource: WeightSource = weightKg === null ? "missing" : vehicle.weightSource;
+  // 只有按吨计价且车型档位明确时才启用预估；按辆计价不需要重量。
+  const autoWeight =
+    rawWeightKg === null && category?.mode === "ton"
+      ? estimateWeightForCategory(category.code)
+      : null;
+  const weightKg = rawWeightKg ?? autoWeight?.midKg ?? null;
+  const weightSource: WeightSource =
+    rawWeightKg !== null ? vehicle.weightSource : autoWeight ? "estimated" : "missing";
 
   const unresolved: string[] = [];
   const assumptions: string[] = [
@@ -671,7 +707,15 @@ export function computeQuote(input: {
     }
   }
 
-  if (weightSource === "estimated") {
+  if (autoWeight) {
+    uniquePush(
+      unresolved,
+      `整备质量按${categoryLabel}预估 ${autoWeight.midKg}kg（${autoWeight.minKg}–${autoWeight.maxKg}kg），需现场称重`,
+    );
+    assumptions.unshift(
+      `整备质量未查到，按${categoryLabel}预估 ${autoWeight.midKg}kg（${autoWeight.minKg}–${autoWeight.maxKg}kg）估算，现场称重后多退少补。`,
+    );
+  } else if (weightSource === "estimated") {
     assumptions.push("整备质量使用用户预估重量，未按实车称重。");
   }
   if (options.partsConfirmed) {
@@ -716,6 +760,27 @@ export function computeQuote(input: {
         midFen: mid,
         highFen: Math.max(high, mid),
       };
+
+      if (autoWeight) {
+        // 预估值：区间直接落在预估重量上下限，而不是再叠一层百分比假设。
+        const minSubtotal = Math.round(
+          (vehicleSubtotalFen * autoWeight.minKg) / autoWeight.midKg,
+        );
+        const maxSubtotal = Math.round(
+          (vehicleSubtotalFen * autoWeight.maxKg) / autoWeight.midKg,
+        );
+        const estLow = roundToTenYuan(
+          clampZero(minSubtotal - deductions.knownFen - deductions.reservedFen),
+        );
+        const estHigh = roundToTenYuan(
+          clampZero(maxSubtotal - deductions.knownFen),
+        );
+        range = {
+          lowFen: Math.min(estLow, mid),
+          midFen: mid,
+          highFen: Math.max(estHigh, mid),
+        };
+      }
     }
   }
 
@@ -725,6 +790,9 @@ export function computeQuote(input: {
     pricingMode,
     weightKg,
     weightSource,
+    weightRangeKg: autoWeight
+      ? { minKg: autoWeight.minKg, maxKg: autoWeight.maxKg }
+      : null,
     fenPerTon,
     baseValueFen,
     steelRimAdjustmentFen,

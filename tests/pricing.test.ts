@@ -191,17 +191,20 @@ describe("定价 · 区间", () => {
     expect(confirmed.range?.highFen).toBe(404_000);
   });
 
-  it("整备质量缺失时不给总价，也不编造兜底重量", () => {
+  it("整备质量缺失时按车型预估重量给区间，并标明预估", () => {
     const quote = quoteWith(
       { ...SEDAN, weightKg: null, weightSource: "missing" },
       { partsConfirmed: true },
     );
-    expect(quote.weightSource).toBe("missing");
-    expect(quote.baseValueFen).toBeNull();
-    expect(quote.vehicleSubtotalFen).toBeNull();
-    expect(quote.netFen).toBeNull();
-    expect(quote.range).toBeNull();
-    expect(quote.unresolved).toContain("整备质量缺失，需地磅称重");
+    expect(quote.weightSource).toBe("estimated");
+    expect(quote.weightKg).toBe(1500);
+    expect(quote.weightRangeKg).toEqual({ minKg: 1200, maxKg: 2000 });
+    expect(quote.baseValueFen).not.toBeNull();
+    expect(quote.netFen).not.toBeNull();
+    expect(quote.range).not.toBeNull();
+    expect(quote.range!.lowFen).toBeLessThan(quote.range!.midFen);
+    expect(quote.range!.highFen).toBeGreaterThan(quote.range!.midFen);
+    expect(quote.unresolved.join("；")).toContain("整备质量按");
   });
 
   it("按辆计价不需要整备质量", () => {

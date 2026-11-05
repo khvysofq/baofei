@@ -301,9 +301,9 @@ export function classifyVehicle(input: {
     if (/皮卡/.test(text)) return "pickup";
     if (/SUV|越野/i.test(text)) return "suv";
     if (/MPV|商务车/i.test(text)) return "mpv";
+    if (/面包|微面|宏光|荣光|之光|欧诺/i.test(text)) return "van";
     if (/货车|卡车|厢式|栏板|自卸|载货|牵引/.test(text)) return "truck";
-    if (/客车|巴士/.test(text)) return "bus";
-    if (/面包|微面/.test(text)) return "van";
+    if (/大型客车|中型客车|大型普通客车|中型普通客车|巴士/.test(text)) return "bus";
     if (/掀背|三厢|两厢|轿车|跑车|硬顶|敞篷/.test(text)) return "sedan";
     return null;
   };
@@ -314,16 +314,16 @@ export function classifyVehicle(input: {
   const byName = fromText(name);
   if (byName) return byName;
 
+  const seats = input.seats ?? null;
+  if (seats !== null && seats >= 9) return "bus";
+  if (seats !== null && seats >= 7) return "mpv";
+
   if (/SUV/i.test(size)) return "suv";
   if (/MPV/i.test(size)) return "mpv";
   if (/微|小型|紧凑|中型|中大型|大型|豪华/.test(size)) return "sedan";
 
   const weight = input.weightKg ?? null;
-  const seats = input.seats ?? null;
-  if (weight !== null && weight >= 4500) return "truck";
   if (weight !== null && weight >= 3000) return "truck";
-  if (seats !== null && seats >= 9) return "bus";
-  if (seats !== null && seats >= 7) return "mpv";
   return "other";
 }
 
