@@ -55,6 +55,48 @@ ssh publish_web_server '
 '
 ```
 
+
+## ⚠️ PGlite 停服风险（2026-11-08 实战）
+
+云端用 PGlite（嵌入式 Postgres）。**进程被 SIGTERM 停掉时有不小概率不写关闭 checkpoint**，
+下次启动会直接失败：
+
+```
+LOG:  database system was interrupted
+LOG:  invalid resource manager ID in checkpoint record
+PANIC: could not locate a valid checkpoint record at 0/XXXXXXX
+RuntimeError: Aborted()
+```
+
+2026-11-08 一天内因此停机两次（14:36、14:42 UTC），恢复靠备份，不是靠修 WAL——
+pg_control 指向的 checkpoint 已经无效，`pg_resetwal` 才可能救，但环境里没有 PG 工具。
+
+**发版一律走脚本，不要手敲停服命令**：
+
+```bash
+./scripts/deploy-cloud.sh          # 构建 + 停服 + 备份 + 替换 + 健康检查
+./scripts/deploy-cloud.sh --skip-build
+```
+
+脚本保证：停服后先 `cp -a` 一份数据库到 `/var/lib/baofei/backup/pglite-predeploy-<时间戳>`，
+再替换应用；启动失败会直接报错退出，人工回滚到该备份即可。
+
+手动恢复：
+
+```bash
+ssh publish_web_server '
+  systemctl stop baofei
+  rm -rf /var/lib/baofei/pglite
+  cp -a /var/lib/baofei/backup/pglite-predeploy-<时间戳> /var/lib/baofei/pglite
+  rm -f /var/lib/baofei/pglite/postmaster.pid
+  chown -R baofei:baofei /var/lib/baofei/pglite
+  systemctl start baofei
+  curl -fsS http://127.0.0.1:18012/api/health'
+```
+
+**根治办法是把 PGlite 换成独立 Postgres 进程**：那样重启应用不会碰到数据库文件，
+发版可以随时重启。当前机器 1.6G 内存跑一个小 PG 实例没问题。迁移见待办。
+
 ## 数据初始化 / 搬运
 
 新机器首次部署：
