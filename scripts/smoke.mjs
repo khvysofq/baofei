@@ -1,4 +1,4 @@
-// 首页 + 7 个业务页面 + /api/health 冒烟。若 10802 未启动，会临时拉起 next dev，检查后关掉。
+// 首页 + /api/health 冒烟，并确认已下线的旧流程路由返回 404。若 10802 未启动，会临时拉起 next dev，检查后关掉。
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -7,14 +7,15 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const base = process.env.SMOKE_BASE_URL || "http://127.0.0.1:10802";
 const PORT = new URL(base).port || "10802";
 
-const ROUTES = [
-  ["/start", "报废助手"],
-  ["/plan", "报废助手"],
-  ["/documents", "报废助手"],
-  ["/quotes", "报废助手"],
-  ["/appointment", "报废助手"],
-  ["/case", "报废助手"],
-  ["/subsidy", "报废助手"],
+// 已下线的旧流程路由，必须返回 404。
+const GONE = [
+  "/start",
+  "/plan",
+  "/documents",
+  "/quotes",
+  "/appointment",
+  "/case",
+  "/subsidy",
 ];
 
 const FORBIDDEN = [
@@ -88,7 +89,7 @@ try {
   });
   const rootHtml = await rootRes.text();
   const rootStatusOk = rootRes.status === 200;
-  const rootMarkerOk = rootHtml.includes("报废一辆车");
+  const rootMarkerOk = rootHtml.includes("输入 VIN");
   const rootNoDemoControl = !rootHtml.includes("演示控制");
   const rootForbidden = FORBIDDEN.filter((word) => rootHtml.includes(word));
   const rootOk =
@@ -101,19 +102,13 @@ try {
     `${rootOk ? "PASS" : "FAIL"}  /  ${rootRes.status}  h1=${rootMarkerOk}  no-demo-control=${rootNoDemoControl}  forbidden=${rootForbidden.join(",") || "none"}`,
   );
 
-  for (const [route, marker] of ROUTES) {
+  for (const route of GONE) {
     const res = await fetch(`${base}${route}`, {
       signal: AbortSignal.timeout(15000),
     });
-    const html = await res.text();
-    const statusOk = res.status === 200;
-    const markerOk = html.includes(marker);
-    const forbidden = FORBIDDEN.filter((word) => html.includes(word));
-    const ok = statusOk && markerOk && forbidden.length === 0;
+    const ok = res.status === 404;
     if (!ok) failed = true;
-    console.log(
-      `${ok ? "PASS" : "FAIL"}  ${route}  ${res.status}  marker=${markerOk}  forbidden=${forbidden.join(",") || "none"}`,
-    );
+    console.log(`${ok ? "PASS" : "FAIL"}  ${route}  ${res.status}  expect=404`);
   }
 
   console.log(

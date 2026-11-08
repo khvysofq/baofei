@@ -7,8 +7,8 @@
 - Canonical：`https://baofei.publicrandom.com/`
 - Open Graph / Twitter Card：使用 `public/og.png`（1200×630）
 - JSON-LD：`WebSite`、`Organization`、`Service`、`FAQPage`
-- `robots.txt`：允许首页，屏蔽 `/api/`、`/guanli` 和早期演示页
-- `sitemap.xml`：只提交首页，避免把演示页当成主内容
+- `robots.txt`：允许收录，只屏蔽 `/api/` 与 `/guanli`
+- `sitemap.xml`：只提交首页（全站唯一对外内容页）
 - 后台 `/guanli`、`/guanli/tongji`：`noindex, nofollow`
 
 ## 线上地址
@@ -29,7 +29,7 @@
 
 ## 后续内容建议
 
-- 每新增一个可公开访问的功能页，把 URL 加进 `src/app/sitemap.ts`。
-- 新页面要有独立的 `title`、`description` 和 canonical。
-- 不要给 `/guanli`、`/api` 或纯演示页做外链。
+- 每新增一个可公开访问的内容页，把 URL 加进 `src/app/sitemap.ts`。
+- 新页面要有独立的 `title`、`description` 和 canonical，且必须有无案件状态也能读的静态内容。
+- 不要给 `/guanli`、`/api` 做外链。
 - 外部引流（公众号、朋友圈、二维码）比堆关键词更有效。

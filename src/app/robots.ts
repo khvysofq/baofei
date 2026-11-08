@@ -4,12 +4,8 @@ const SITE =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://baofei.publicrandom.com";
 
 /**
- * 收录策略：
- * - 首页与 /start（有独立静态内容）放开收录。
- * - 后台 /guanli、接口 /api/ 永远不收录。
- * - /plan /documents /quotes /appointment /case /subsidy 是依赖案件状态的流程页，
- *   无案件时只渲染空状态，放出去会产生重复标题的低质页，因此暂不收录；
- *   等它们各自具备独立静态内容后再放开（见 docs/seo.md）。
+ * 站点只保留 VIN 估价（首页）与管理后台。
+ * 旧办理流程页面已在 2026-11-08 从代码中删除，无需再写进 disallow。
  */
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -17,16 +13,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: [
-          "/api/",
-          "/guanli",
-          "/plan",
-          "/documents",
-          "/quotes",
-          "/appointment",
-          "/case",
-          "/subsidy",
-        ],
+        disallow: ["/api/", "/guanli"],
       },
     ],
     sitemap: `${SITE}/sitemap.xml`,
