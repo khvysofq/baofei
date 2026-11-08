@@ -25,7 +25,8 @@ const PROVIDERS: VinProvider[] = [jisuepcProvider];
 
 const CACHE_VERSION = "v1";
 const DEFAULT_TIMEOUT_MS = 6000;
-const DEFAULT_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
+/** 车型档案缓存 360 天：查询结果是要长期复用的资产，频繁命中的 VIN 每次还会顺延。 */
+const DEFAULT_CACHE_TTL_SECONDS = 360 * 24 * 60 * 60;
 const DEFAULT_MISS_TTL_SECONDS = 10 * 60;
 const RETRY_BACKOFF_MS = 250;
 const QUOTA_MESSAGE =
