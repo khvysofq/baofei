@@ -8,8 +8,19 @@
 - Open Graph / Twitter Card：使用 `public/og.png`（1200×630）
 - JSON-LD：`WebSite`、`Organization`、`Service`、`FAQPage`
 - `robots.txt`：允许收录，只屏蔽 `/api/` 与 `/guanli`
-- `sitemap.xml`：只提交首页（全站唯一对外内容页）
+- `sitemap.xml`：首页 + 21 个市州落地页，共 22 条
 - 后台 `/guanli`、`/guanli/tongji`：`noindex, nofollow`
+
+## 城市落地页（`/[city]`）
+
+- 数据源：`src/lib/seo/cities.ts`（21 个市州，含号牌代码、片区、本地要点）。加城市只改这一个文件，
+  路由、sitemap、页脚内链会自动带上。
+- 每个页面有独立的 `title` / `description` / canonical / OG，以及 BreadcrumbList + Service + FAQPage 结构化数据。
+- 页面上的 VIN 输入只做格式校验，然后把 VIN 带到首页估价框（`/?vin=...#vin-input`），
+  不在 21 个页面重复渲染整份估价应用，避免页面互相抢同一批关键词。
+- 未知 slug 走 `notFound()` 返回 404，不会产生软 404。
+- 内容口径：只写可核实的事实（号牌代码、所属片区、注销受理机关的一般规则），
+  不写具体车管所地址、补贴金额和日期，避免过期。
 
 ## 线上地址
 

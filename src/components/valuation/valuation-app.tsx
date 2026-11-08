@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReportView } from "@/components/valuation/report-view";
+import { SiteFooter } from "@/components/site-footer";
 import type { VinQuoteReport } from "@/lib/valuation/pricing";
 import { validateVin } from "@/lib/vin/normalize";
 
@@ -31,6 +32,16 @@ export function ValuationApp() {
 
   const vinValid = useMemo(() => validateVin(vin).ok, [vin]);
   const canSubmit = vin.trim().length > 0 && status !== "analyzing";
+
+  // 城市落地页把 VIN 带过来时预填，不自动提交（避免被批量刷渠道额度）。
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("vin");
+    if (!param) return;
+    const cleaned = param.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17);
+    if (!cleaned) return;
+    setVin(cleaned);
+    window.setTimeout(() => vinRef.current?.focus(), 80);
+  }, []);
 
   useEffect(() => {
     if (status !== "analyzing") return;
@@ -307,24 +318,7 @@ export function ValuationApp() {
         ) : null}
       </main>
 
-      <footer className="border-t border-line bg-panel/60">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-dim sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>
-            <span className="font-bold text-text">报废车参考收购价</span> · 四川地区报废机动车回收服务
-          </p>
-          <p className="mono text-[10px] tracking-[0.08em]">
-            <a
-              href="https://beian.miit.gov.cn/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-brand"
-            >
-              京ICP备2023038384号
-            </a>
-          </p>
-          <p className="mono text-[10px] tracking-[0.08em]">SAMPLE BUILD · 2026</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
