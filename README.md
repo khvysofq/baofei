@@ -79,7 +79,8 @@ pnpm dev --port 10802
 
 ## 部署
 
-单机 standalone + PGlite，systemd 托管，Nginx 反代到 `127.0.0.1:18012`。
+单机 standalone + 本机 PostgreSQL 17，systemd 托管，Nginx 反代到 `127.0.0.1:18012`。
+数据库每日自动 `pg_dump` 备份，发版用 `scripts/deploy-cloud.sh`（构建、备份、替换、健康检查）。
 完整步骤与回滚见 `docs/deploy-cloud.md`。
 
 ## 已知边界

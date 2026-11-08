@@ -8,12 +8,17 @@
   → 127.0.0.1:18012
   → systemd: baofei.service
   → node server.js（Next.js standalone）
-      ├─ 业务数据：PGlite（/var/lib/baofei/pglite）
-      ├─ 缓存：PGlite 表 cache_entries（跨重启保留）
+      ├─ 业务数据：本机 PostgreSQL 17（127.0.0.1:5432，库 baofei）
+      ├─ 缓存：cache_entries 表（CACHE_DRIVER=db）
       └─ 证件样例：代码生成 SVG，不落对象存储
 ```
 
-不再需要 Postgres、Valkey、Garage S3，也不再经过 frp 隧道。
+**2026-11-08 前用的是 PGlite（嵌入式 Postgres），已迁移到独立 PostgreSQL 17 进程。**
+PGlite 的问题是进程被 SIGTERM 杀掉时不写关闭 checkpoint，下次启动直接
+`PANIC: could not locate a valid checkpoint record`，当天因此停机两次。换成独立进程后，
+重启应用完全不碰数据库文件，发版可以随时 stop/start。
+
+不再需要 Valkey、Garage S3，也不再经过 frp 隧道。
 
 > 端口说明：该机器的 frps 占用了 10800–11000 与 22000–22100 区间，因此应用选
 > `18012`，避免和 frp 映射冲突。
@@ -23,7 +28,9 @@
 | 路径 | 用途 |
 | --- | --- |
 | `/srv/apps/baofei` | 应用与 `.env`（0600，属主 `baofei`） |
-| `/var/lib/baofei/pglite` | PGlite 数据目录 |
+| `/var/lib/postgresql/17/main` | PostgreSQL 17 数据目录 |
+| `/var/lib/baofei/backup` | 数据库备份（每日 + 发版前） |
+| `/var/lib/baofei/pglite` | 旧 PGlite 目录，已停用，仅留作回滚 |
 | `/etc/systemd/system/baofei.service` | 服务单元 |
 | `/etc/nginx/backups/` | Nginx 配置备份 |
 | `/usr/local/lib/node22` | Node 22 运行时 |
@@ -56,46 +63,43 @@ ssh publish_web_server '
 ```
 
 
-## ⚠️ PGlite 停服风险（2026-11-08 实战）
+## 数据库（PostgreSQL 17）
 
-云端用 PGlite（嵌入式 Postgres）。**进程被 SIGTERM 停掉时有不小概率不写关闭 checkpoint**，
-下次启动会直接失败：
+- 服务：`postgresql@17-main`，只监听 `127.0.0.1:5432`。
+- 库/角色：`baofei` / `baofei`，密码在 `/srv/apps/baofei/.env` 的 `DATABASE_URL`。
+- 调优（1.6G 内存小机）：`shared_buffers=192MB`、`max_connections=30`、`work_mem=8MB`、
+  `effective_cache_size=768MB`、`wal_compression=on`、`log_min_duration_statement=2000`。
+  改配置前先 `cp -a postgresql.conf postgresql.conf.bak-<时间戳>`。
+- 应用侧：`.env` 里 `DB_DRIVER=pg` + `DATABASE_URL`；`CACHE_DRIVER=db` 复用同一个库。
+- 健康检查应返回 `"dbDriver":"pg"`。
 
-```
-LOG:  database system was interrupted
-LOG:  invalid resource manager ID in checkpoint record
-PANIC: could not locate a valid checkpoint record at 0/XXXXXXX
-RuntimeError: Aborted()
-```
+### 备份
 
-2026-11-08 一天内因此停机两次（14:36、14:42 UTC），恢复靠备份，不是靠修 WAL——
-pg_control 指向的 checkpoint 已经无效，`pg_resetwal` 才可能救，但环境里没有 PG 工具。
-
-**发版一律走脚本，不要手敲停服命令**：
-
-```bash
-./scripts/deploy-cloud.sh          # 构建 + 停服 + 备份 + 替换 + 健康检查
-./scripts/deploy-cloud.sh --skip-build
-```
-
-脚本保证：停服后先 `cp -a` 一份数据库到 `/var/lib/baofei/backup/pglite-predeploy-<时间戳>`，
-再替换应用；启动失败会直接报错退出，人工回滚到该备份即可。
-
-手动恢复：
+- 每日定时：`baofei-db-backup.timer`（北京时间 02:30）→ `pg_dump -Fc` 到
+  `/var/lib/baofei/backup/db/baofei-*.dump.gz`，保留 14 份，dump 后会用 `pg_restore -l` 校验。
+- 发版前：`scripts/deploy-cloud.sh` 会额外 dump 一份 `predeploy-*.dump`。
+- 手动备份/恢复：
 
 ```bash
+# 备份
+ssh publish_web_server 'runuser -u postgres -- pg_dump -Fc -d baofei -f /tmp/baofei.dump'
+
+# 恢复（先停应用）
 ssh publish_web_server '
   systemctl stop baofei
-  rm -rf /var/lib/baofei/pglite
-  cp -a /var/lib/baofei/backup/pglite-predeploy-<时间戳> /var/lib/baofei/pglite
-  rm -f /var/lib/baofei/pglite/postmaster.pid
-  chown -R baofei:baofei /var/lib/baofei/pglite
+  runuser -u postgres -- dropdb --if-exists baofei
+  runuser -u postgres -- createdb -O baofei baofei
+  runuser -u postgres -- pg_restore -d baofei /var/lib/baofei/backup/db/baofei-YYYYMMDD-HHMM.dump.gz
   systemctl start baofei
   curl -fsS http://127.0.0.1:18012/api/health'
 ```
 
-**根治办法是把 PGlite 换成独立 Postgres 进程**：那样重启应用不会碰到数据库文件，
-发版可以随时重启。当前机器 1.6G 内存跑一个小 PG 实例没问题。迁移见待办。
+### 已归档：PGlite 时代的注意事项
+
+2026-11-08 之前数据库是 PGlite，停服会损坏，发版必须「停服→备份→替换→启动→验证」。
+现在的流程已改成 PG，旧的 `PGLITE_DATA_DIR` 保留在 `.env` 里但不再生效。
+如果要回滚到 PGlite：把 `DB_DRIVER` 改回 `pglite`、删掉 `DATABASE_URL`，并把
+`/var/lib/baofei/backup/pglite-*` 里的一份拷回 `/var/lib/baofei/pglite`。
 
 ## 数据初始化 / 搬运
 

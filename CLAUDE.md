@@ -16,7 +16,7 @@
 ## 技术栈（已定，不要替换）
 
 - Next.js 16 App Router + TypeScript strict + Tailwind CSS 4（在 `globals.css` 里 `@import`）
-- 数据库：Postgres 18（`pg`）或 PGlite（单机部署），由 `src/lib/db.ts` 统一封装双驱动
+- 数据库：PostgreSQL 17（`pg`），云端用本机 `postgresql@17-main`；`src/lib/db.ts` 仍保留 pglite 驱动作为回滚路径，但线上不再使用
 - 缓存：`src/lib/cache.ts` 支持 redis / db / 内存三种后端（云端用 `db`，即 PGlite 表 `cache_entries`）
 - 存储：`src/lib/storage.ts`，无 `S3_ENDPOINT` 时本地生成样例 SVG
 - 测试：vitest；脚本：`scripts/*.mjs`（Node 原生）
@@ -65,7 +65,8 @@ scripts/                        migrate / seed / copy / package-standalone / smo
 `.env.local`（0600，gitignored）含 `DATABASE_URL` `S3_*`、VIN 渠道 appkey（`JISUEPC_APPKEY`）、
 后台密码等。**不要打印、提交或修改其中密钥**；不要在代码里写死连接串。
 
-云端事实：`/srv/apps/baofei`，数据 `/var/lib/baofei/pglite`，systemd `baofei.service`，
+云端事实：`/srv/apps/baofei`，数据库本机 PostgreSQL 17（库/角色 `baofei`，数据 `/var/lib/postgresql/17/main`，
+备份 `/var/lib/baofei/backup`），systemd `baofei.service`，
 Nginx `baofei.publicrandom.com` → `127.0.0.1:18012`。详见 `docs/deploy-cloud.md`。
 端口选择要避开 frps 占用的 10800–11000 与 22000–22100。
 
