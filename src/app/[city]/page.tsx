@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CityExamples } from "@/components/city/city-examples";
 import { CityVinForm } from "@/components/city/city-vin-form";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import {
   CITIES,
   CITY_BY_SLUG,
@@ -23,7 +26,8 @@ type PageProps = { params: Promise<{ city: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { city: slug } = await params;
   const city = CITY_BY_SLUG.get(slug);
-  if (!city) return {};
+  // 在元数据阶段就 404，避免流式渲染先把 200 状态码发出去（软 404）。
+  if (!city) notFound();
 
   const title = `${city.name}报废车回收价格查询｜输入 VIN 免费估价`;
   const description = `${city.name}（${city.plate}）报废车参考收购价查询：输入 17 位 VIN，30 秒估算车值与到手区间，含缺件、拖运、服务费扣减。无需登录，不采集个人信息。`;
@@ -157,26 +161,7 @@ export default async function CityPage({ params }: PageProps) {
       />
 
       <div className="min-h-dvh">
-        <header className="border-b border-line/80 bg-void/90">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-            <Link href="/" className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-base font-black text-white">
-                收
-              </span>
-              <span className="leading-tight">
-                <span className="block text-base font-black tracking-tight">
-                  报废车参考收购价
-                </span>
-                <span className="mono block text-[10px] tracking-[0.14em] text-dim">
-                  VIN QUOTE · SICHUAN
-                </span>
-              </span>
-            </Link>
-            <Link href="/" className="btn-primary min-h-[40px] px-4 text-sm">
-              免费估价
-            </Link>
-          </div>
-        </header>
+        <SiteHeader />
 
         <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:pt-12">
           <nav aria-label="面包屑" className="text-xs text-dim">
@@ -276,6 +261,25 @@ export default async function CityPage({ params }: PageProps) {
             <p className="mt-4 rounded-lg border border-line bg-raise/60 p-4 text-sm leading-relaxed text-dim">
               {REGION_NOTE[city.region]}
             </p>
+          </section>
+
+          <section className="mt-12">
+            <h2 className="text-xl font-black tracking-tight sm:text-2xl">
+              {city.name}常见车型参考区间
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-dim">
+              下表按当前价目表和{city.name}所在的{city.region}片区典型拖运里程估算，
+              用来看量级。具体到某台车，还是要输 VIN 才能算准整备质量与车型档位。
+            </p>
+            <div className="mt-4">
+              <Suspense
+                fallback={
+                  <div className="panel p-4 text-sm text-dim">正在读取当前价目表…</div>
+                }
+              >
+                <CityExamples city={city} />
+              </Suspense>
+            </div>
           </section>
 
           <section className="mt-12">

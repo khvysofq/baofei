@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { CITIES } from "@/lib/seo/cities";
+import { QA_PAGES } from "@/lib/seo/qa";
 
 const SITE =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://baofei.publicrandom.com";
@@ -19,6 +20,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: LAST_MODIFIED,
       changeFrequency: "monthly" as const,
       priority: 0.8,
+    })),
+    {
+      url: `${SITE}/wenda`,
+      lastModified: LAST_MODIFIED,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    ...QA_PAGES.map((page) => ({
+      url: `${SITE}/wenda/${page.slug}`,
+      lastModified: LAST_MODIFIED,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
     })),
   ];
 }

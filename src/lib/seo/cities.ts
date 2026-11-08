@@ -41,6 +41,18 @@ export const REGION_NOTE: Record<CityRegion, string> = {
     "川西高原片区（阿坝、甘孜）海拔高、运距长，拖运需按实际路线单独议价，冬季和雨季建议预留更多时间。",
 };
 
+/**
+ * 各片区「到省内拆解企业的典型拖运里程」，只用于落地页上的估算示例。
+ * 真实报价按实际里程计费，页面上必须写明这一点。
+ */
+export const REGION_TOW_KM: Record<CityRegion, number> = {
+  成都平原: 60,
+  川南: 180,
+  川东北: 240,
+  攀西: 450,
+  川西高原: 300,
+};
+
 export const CITIES: City[] = [
   {
     slug: "chengdu",

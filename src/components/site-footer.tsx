@@ -9,7 +9,9 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-line bg-panel/60">
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-        <p className="text-xs font-bold text-text">四川各市州报废车估价</p>
+        <p id="city-list" className="scroll-mt-20 text-xs font-bold text-text">
+          四川各市州报废车估价
+        </p>
         <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-dim">
           {CITIES.map((city) => (
             <li key={city.slug}>
@@ -19,6 +21,12 @@ export function SiteFooter() {
             </li>
           ))}
         </ul>
+
+        <p className="mt-4 text-xs text-dim">
+          <Link href="/wenda" className="hover:text-brand">
+            汽车报废常见问题：吨价、流程、材料、补贴 →
+          </Link>
+        </p>
 
         <div className="mt-6 flex flex-col gap-2 border-t border-line pt-4 text-xs text-dim sm:flex-row sm:items-center sm:justify-between">
           <p>
