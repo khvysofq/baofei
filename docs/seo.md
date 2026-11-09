@@ -44,3 +44,26 @@
 - 新页面要有独立的 `title`、`description` 和 canonical，且必须有无案件状态也能读的静态内容。
 - 不要给 `/guanli`、`/api` 做外链。
 - 外部引流（公众号、朋友圈、二维码）比堆关键词更有效。
+## 抓取现状与冷启动（2026-11-09 实测）
+
+nginx 日志（10/28–11/10）里 **只有 GPTBot 来过一次**，Baiduspider / Googlebot / bingbot
+一次都没有；`/robots.txt` 和 `/sitemap.xml` 也只有一个外部 IP 请求过。结论：
+
+- 不是被墙、也不是 UA 拦截（用 Baiduspider / Googlebot / bingbot 的 UA 请求，首页和 sitemap 都是 200）。
+- 是**没人知道这个域名存在**：零外链、百度 API 配额为 0，蜘蛛没有任何发现路径。
+
+破局顺序：
+
+1. **百度资源平台 → 普通收录 → sitemap 提交**（不占推送配额），然后看「索引量」而不是只看配额。
+2. **IndexNow**（Bing / Yandex / Seznam，免费无配额）：`./scripts/indexnow-push.sh`。
+   key 文件在 `public/<key>.txt`，必须能从根路径直接访问。已推送一次，返回 HTTP 202。
+3. **外链**：这是百度最认的信号。公众号文章、知乎回答、小红书、地方论坛、企业黄页、
+   合作修理厂的门店页，都可以放一条链接。纯靠 sitemap 等百度主动来，新站可能要几周。
+4. Google 需要 Search Console 手动提交 sitemap（Google 已停用 sitemap ping 接口）。
+
+排查命令（在云端执行）：
+
+```bash
+zcat -f /var/log/nginx/access.log* | grep -F "baofei.publicrandom.com" > /tmp/bf.log
+grep -icE "baiduspider|googlebot|bingbot" /tmp/bf.log
+```
