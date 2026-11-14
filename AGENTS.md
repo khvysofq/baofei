@@ -12,8 +12,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 通过验证的改动默认发布到 `publish_web_server`，并做公网健康检查。线上链路：
 Nginx `baofei.publicrandom.com` → `127.0.0.1:18012` → systemd `baofei.service` →
-Next.js standalone + PGlite（数据在 `/var/lib/baofei/pglite`）。完整步骤见
-`docs/deploy-cloud.md`。
+Next.js standalone + PostgreSQL 17。完整步骤见 `docs/deploy-cloud.md`。
+
+另有一套独立实例在 `qingniao-ecs`（`www.4d4d4d4d.com`，PostgreSQL 13，同一份构建产物），
+步骤与注意事项见 `docs/deploy-qingniao-ecs.md`。两套实例数据库互不相通，发版时按需分别发布；
+构建 `NEXT_PUBLIC_SITE_URL` 必须指向目标域名。
 
 不要修改 frp/frps 配置，也不要停用 10802 隧道；不要打印 `.env` 中的密钥。
 
