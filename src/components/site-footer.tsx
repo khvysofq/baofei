@@ -45,7 +45,7 @@ export function SiteFooter() {
               rel="noopener noreferrer"
               className="hover:text-brand"
             >
-              京ICP备2023038384号
+              蜀ICP备2026071067号
             </a>
           </p>
         </div>
